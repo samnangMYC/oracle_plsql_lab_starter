@@ -1,0 +1,763 @@
+-- ============================================================================
+-- FLEXCUBE-style Customer / CIF module training schema
+-- Target: Oracle Database Free (for SQL Developer / PL/SQL lab use)
+--
+-- IMPORTANT
+-- * This is an educational reconstruction using public FLEXCUBE table names
+--   and publicly documented field names. It is NOT Oracle's licensed, complete
+--   14.1 production DDL and must not be represented as an exact vendor schema.
+-- * FLEXCUBE builds, patches, country localizations, and customization can
+--   change columns, lengths, constraints, triggers, and relationships.
+-- * Run this script in a dedicated training schema such as CB_LAB, never in a
+--   production FLEXCUBE schema.
+-- * Run with F5 (Run Script) in SQL Developer. Run once in a clean schema.
+-- ============================================================================
+
+-- ---------------------------------------------------------------------------
+-- 1. Customer / CIF master
+-- A selection of publicly documented FLEXCUBE customer fields is included.
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_CUSTOMER (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    CUSTOMER_TYPE        VARCHAR2(1)    NOT NULL,
+    CUSTOMER_CATEGORY    VARCHAR2(10)   NOT NULL,
+    CUSTOMER_NAME1       VARCHAR2(105)  NOT NULL,
+    CUSTOMER_NAME2       VARCHAR2(105),
+    FULL_NAME            VARCHAR2(255),
+    SHORT_NAME           VARCHAR2(20)   NOT NULL,
+    SHORT_NAME2          VARCHAR2(20),
+    ADDRESS_LINE1        VARCHAR2(105),
+    ADDRESS_LINE2        VARCHAR2(105),
+    ADDRESS_LINE3        VARCHAR2(105),
+    ADDRESS_LINE4        VARCHAR2(105),
+    COUNTRY              VARCHAR2(3),
+    NATIONALITY          VARCHAR2(3),
+    LANGUAGE             VARCHAR2(3),
+    PINCODE              VARCHAR2(15),
+    LOCAL_BRANCH         VARCHAR2(3)    NOT NULL,
+    ACCESS_GROUP         VARCHAR2(20),
+    CUST_CLASSIFICATION  VARCHAR2(1),
+    CUST_GROUP           VARCHAR2(10),
+    KYC_DETAILS          VARCHAR2(1),
+    KYC_REF_NO           VARCHAR2(20),
+    UNIQUE_ID_NAME       VARCHAR2(30),
+    UNIQUE_ID_VALUE      VARCHAR2(50),
+    CIF_STATUS           VARCHAR2(1)    DEFAULT 'A' NOT NULL,
+    FROZEN               VARCHAR2(1)    DEFAULT 'N' NOT NULL,
+    DECEASED             VARCHAR2(1)    DEFAULT 'N' NOT NULL,
+    WHEREABOUTS_UNKNOWN  VARCHAR2(1)    DEFAULT 'N' NOT NULL,
+    RECORD_STAT          VARCHAR2(1)    DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1)    DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4)      DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12)   DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE           DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1)    DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_CUSTOMER PRIMARY KEY (CUSTOMER_NO),
+    CONSTRAINT CK_STTM_CUST_TYPE CHECK (CUSTOMER_TYPE IN ('I','C')),
+    CONSTRAINT CK_STTM_CIF_STATUS CHECK (CIF_STATUS IN ('A','S','D')),
+    CONSTRAINT CK_STTM_CUST_RECSTAT CHECK (RECORD_STAT IN ('O','C')),
+    CONSTRAINT CK_STTM_CUST_AUTHSTAT CHECK (AUTH_STAT IN ('A','U')),
+    CONSTRAINT CK_STTM_CUST_FROZEN CHECK (FROZEN IN ('Y','N')),
+    CONSTRAINT CK_STTM_CUST_DECEASED CHECK (DECEASED IN ('Y','N')),
+    CONSTRAINT CK_STTM_CUST_WHEREABOUTS CHECK (WHEREABOUTS_UNKNOWN IN ('Y','N'))
+);
+
+CREATE INDEX IX_STTM_CUSTOMER_NAME ON STTM_CUSTOMER (CUSTOMER_NAME1, CUSTOMER_NAME2);
+CREATE INDEX IX_STTM_CUSTOMER_UNQID ON STTM_CUSTOMER (UNIQUE_ID_NAME, UNIQUE_ID_VALUE);
+
+-- ---------------------------------------------------------------------------
+-- 2. Personal / domestic customer details
+-- Field names follow those published for FLEXCUBE's personal/domestic CIF data.
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_CUST_PERSONAL (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    CUSTOMER_PREFIX      VARCHAR2(10),
+    CUSTOMER_PREFIX1     VARCHAR2(10),
+    CUSTOMER_PREFIX2     VARCHAR2(10),
+    FIRST_NAME           VARCHAR2(105),
+    MIDDLE_NAME          VARCHAR2(105),
+    LAST_NAME            VARCHAR2(105),
+    SEX                  VARCHAR2(1),
+    DATE_OF_BIRTH        DATE,
+    PLACE_OF_BIRTH       VARCHAR2(105),
+    BIRTH_COUNTRY        VARCHAR2(3),
+    PASSPORT_NO          VARCHAR2(30),
+    PPT_ISS_DATE         DATE,
+    PPT_EXP_DATE         DATE,
+    P_NATIONAL_ID        VARCHAR2(30),
+    RESIDENT_STATUS      VARCHAR2(1),
+    US_RES_STATUS        VARCHAR2(1),
+    VST_US_PREV           VARCHAR2(1),
+    MOTHER_MAIDEN_NAME   VARCHAR2(105),
+    MARITAL_STATUS       VARCHAR2(1),
+    SPOUSE_NAME          VARCHAR2(105),
+    SPOUSE_EMP_STATUS    VARCHAR2(1),
+    DEPENDENT_CHILDREN   NUMBER(3),
+    DEPENDENT_OTHERS     NUMBER(3),
+    EDUCATIONAL_STATUS   VARCHAR2(10),
+    ACCOMODATION         VARCHAR2(10),
+    LEGAL_GUARDIAN       VARCHAR2(105),
+    MINOR                VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CUST_COMM_MODE       VARCHAR2(10),
+    E_MAIL               VARCHAR2(254),
+    MOBILE_NUMBER        VARCHAR2(20),
+    MOB_ISD_NO           VARCHAR2(5),
+    TELEPHONE            VARCHAR2(20),
+    TEL_ISD_NO           VARCHAR2(5),
+    HOME_TEL_NO          VARCHAR2(20),
+    HOME_TEL_ISD         VARCHAR2(5),
+    FAX                  VARCHAR2(20),
+    FAX_ISD_NO           VARCHAR2(5),
+    D_ADDRESS1           VARCHAR2(105),
+    D_ADDRESS2           VARCHAR2(105),
+    D_ADDRESS3           VARCHAR2(105),
+    D_ADDRESS4           VARCHAR2(105),
+    D_COUNTRY            VARCHAR2(3),
+    D_PINCODE            VARCHAR2(15),
+    P_ADDRESS1           VARCHAR2(105),
+    P_ADDRESS2           VARCHAR2(105),
+    P_ADDRESS3           VARCHAR2(105),
+    P_ADDRESS4           VARCHAR2(105),
+    P_COUNTRY            VARCHAR2(3),
+    P_PINCODE            VARCHAR2(15),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_CUST_PERSONAL PRIMARY KEY (CUSTOMER_NO),
+    CONSTRAINT FK_CUST_PERSONAL_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO),
+    CONSTRAINT CK_CUST_PERSONAL_MINOR CHECK (MINOR IN ('Y','N')),
+    CONSTRAINT CK_CUST_PERSONAL_SEX CHECK (SEX IN ('M','F','O') OR SEX IS NULL)
+);
+
+-- ---------------------------------------------------------------------------
+-- 3. Corporate customer details
+-- Uses documented FLEXCUBE corporate/KYC field names plus core identification
+-- fields commonly needed by a customer-maintenance lab.
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_CUST_CORPORATE (
+    CUSTOMER_NO          VARCHAR2(9)   NOT NULL,
+    COMPANY_TYPE         VARCHAR2(10),
+    BUSINESS_NATURE      VARCHAR2(10),
+    GROUP_NAME           VARCHAR2(105),
+    EMPLOYEE_NUMBER      NUMBER(10),
+    ANNUAL_TURNOVER       NUMBER(20,2),
+    PARENT_CMPNY_COUNTRY VARCHAR2(3),
+    OTHR_COMPANY_TYPE    VARCHAR2(105),
+    INCORPORATION_NO     VARCHAR2(50),
+    INCORPORATION_DATE   DATE,
+    INCORPORATION_COUNTRY VARCHAR2(3),
+    REGISTERED_ADDRESS1  VARCHAR2(105),
+    REGISTERED_ADDRESS2  VARCHAR2(105),
+    REGISTERED_ADDRESS3  VARCHAR2(105),
+    REGISTERED_ADDRESS4  VARCHAR2(105),
+    KYC_COMMENTS         VARCHAR2(4000),
+    KYC_NXT_REVIEW_DATE  DATE,
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_CUST_CORP PRIMARY KEY (CUSTOMER_NO),
+    CONSTRAINT FK_CUST_CORP_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO)
+);
+
+-- ---------------------------------------------------------------------------
+-- 4. Professional / employment information for an individual customer
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_CUST_PROFESSIONAL (
+    CUSTOMER_NO          VARCHAR2(9)   NOT NULL,
+    EMPLOYER             VARCHAR2(105),
+    EMPLOYMENT_STATUS    VARCHAR2(10),
+    EMPLOYMENT_TENURE    NUMBER(4),
+    DESIGNATION          VARCHAR2(105),
+    PREV_EMPLOYER        VARCHAR2(105),
+    PREV_DESIGNATION     VARCHAR2(105),
+    E_ADDRESS1           VARCHAR2(105),
+    E_ADDRESS2           VARCHAR2(105),
+    E_ADDRESS3           VARCHAR2(105),
+    E_ADDRESS4           VARCHAR2(105),
+    E_COUNTRY            VARCHAR2(3),
+    E_EMAIL              VARCHAR2(254),
+    E_TELEPHONE          VARCHAR2(20),
+    SALARY               NUMBER(20,2),
+    SALARY_FREQ          VARCHAR2(10),
+    CCY_PERS_INCEXP      VARCHAR2(3),
+    OTHER_INCOME         NUMBER(20,2),
+    OTHER_EXPENSES       NUMBER(20,2),
+    RENT                 NUMBER(20,2),
+    LOAN_PAYMENT         NUMBER(20,2),
+    HOUSE_VALUE          NUMBER(20,2),
+    INSURANCE            NUMBER(20,2),
+    CREDIT_CARDS         NUMBER(4),
+    RETIREMENT_AGE       NUMBER(3),
+    PINCODE              VARCHAR2(15),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_CUST_PRO PRIMARY KEY (CUSTOMER_NO),
+    CONSTRAINT FK_CUST_PRO_PERSONAL FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUST_PERSONAL (CUSTOMER_NO)
+);
+
+-- ---------------------------------------------------------------------------
+-- 5. Customer group maintenance
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_CUST_GROUP (
+    CUST_GROUP           VARCHAR2(10)  NOT NULL,
+    CUST_GROUP_DESC      VARCHAR2(105) NOT NULL,
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_CUST_GROUP PRIMARY KEY (CUST_GROUP)
+);
+
+-- ---------------------------------------------------------------------------
+-- 6. Customer-to-customer relationship details
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_CUST_RELATION (
+    CUSTOMER_NO          VARCHAR2(9)  NOT NULL,
+    RELATED_CUSTOMER_NO  VARCHAR2(9)  NOT NULL,
+    RELATIONSHIP         VARCHAR2(10) NOT NULL,
+    EFFECTIVE_DATE       DATE DEFAULT SYSDATE NOT NULL,
+    EXPIRY_DATE          DATE,
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_CUST_REL PRIMARY KEY
+        (CUSTOMER_NO, RELATED_CUSTOMER_NO, RELATIONSHIP),
+    CONSTRAINT FK_CUST_REL_CIF1 FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO),
+    CONSTRAINT FK_CUST_REL_CIF2 FOREIGN KEY (RELATED_CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO),
+    CONSTRAINT CK_CUST_REL_NOTSELF CHECK (CUSTOMER_NO <> RELATED_CUSTOMER_NO)
+);
+
+-- ---------------------------------------------------------------------------
+-- 7. Corporate shareholder register
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_CUST_SHAREHOLDER (
+    CUSTOMER_NO          VARCHAR2(9)   NOT NULL,
+    SHAREHOLDER_NO       VARCHAR2(9)   NOT NULL,
+    SHARE_HOLDING        NUMBER(7,4),
+    OWNERSHIP_TYPE       VARCHAR2(10),
+    EFFECTIVE_DATE       DATE,
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_CUST_SHH PRIMARY KEY (CUSTOMER_NO, SHAREHOLDER_NO),
+    CONSTRAINT FK_CUST_SHH_CIF1 FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO),
+    CONSTRAINT FK_CUST_SHH_CIF2 FOREIGN KEY (SHAREHOLDER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO),
+    CONSTRAINT CK_CUST_SHH_HOLDING CHECK (SHARE_HOLDING BETWEEN 0 AND 100 OR SHARE_HOLDING IS NULL)
+);
+
+-- ---------------------------------------------------------------------------
+-- 8. Corporate directors / key persons
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_CORP_DIRECTORS (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    DIRECTOR_NO          NUMBER(4)      NOT NULL,
+    NAME                 VARCHAR2(105)  NOT NULL,
+    POSITION_OR_TITLE    VARCHAR2(105),
+    DATE_OF_BIRTH        DATE,
+    BIRTH_COUNTRY        VARCHAR2(3),
+    NATIONALITY          VARCHAR2(3),
+    ADDRESS              VARCHAR2(255),
+    ADDRESS_COUNTRY      VARCHAR2(3),
+    ISD_CODE             VARCHAR2(5),
+    TEL_NO               VARCHAR2(20),
+    TIN                  VARCHAR2(40),
+    TAX_CNTRY            VARCHAR2(3),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_CORP_DIR PRIMARY KEY (CUSTOMER_NO, DIRECTOR_NO),
+    CONSTRAINT FK_CORP_DIR_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUST_CORPORATE (CUSTOMER_NO)
+);
+
+-- ---------------------------------------------------------------------------
+-- 9. KYC master / risk lookup
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_KYC_MASTER (
+    KYC_CODE             VARCHAR2(20)   NOT NULL,
+    KYC_DESC             VARCHAR2(105)  NOT NULL,
+    CRS_TYPE             VARCHAR2(10),
+    RISK_LEVEL           VARCHAR2(10),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_MASTER PRIMARY KEY (KYC_CODE)
+);
+
+-- ---------------------------------------------------------------------------
+-- 10. Retail KYC
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_KYC_RETAIL (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    ACC_PURPOSE          VARCHAR2(20),
+    ACC_TYPE             VARCHAR2(20),
+    APPROVER_COMMENTS    VARCHAR2(1000),
+    BIRTH_COUNTRY        VARCHAR2(3),
+    BIRTH_DATE           DATE,
+    BIRTH_PLACE          VARCHAR2(105),
+    BUSINESS_INCOME      NUMBER(20,2),
+    DECLARED             VARCHAR2(1),
+    FAX_ISD_NO           VARCHAR2(5),
+    FAX_NO               VARCHAR2(20),
+    HOME_ADDR_COUNTRY    VARCHAR2(3),
+    HOME_COUNTRY_ADDR    VARCHAR2(255),
+    INVESTMENT_INCOME    NUMBER(20,2),
+    KYC_AMTS_CCY         VARCHAR2(3),
+    KYC_COMMENTS         VARCHAR2(4000),
+    KYC_NXT_REVIEW_DATE  DATE,
+    LOCAL_ADDR           VARCHAR2(255),
+    LOCAL_ADDR_COUNTRY   VARCHAR2(3),
+    MOBILE_TEL_NO        VARCHAR2(20),
+    MOB_ISD_NO           VARCHAR2(5),
+    NATIONALITY          VARCHAR2(3),
+    OFFICE_TEL_NO        VARCHAR2(20),
+    OFF_TEL_ISD_NO       VARCHAR2(5),
+    OTHR_ACC_PURPOSE     VARCHAR2(255),
+    OTHR_INCOME_SOURCES   VARCHAR2(1000),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_RETAIL PRIMARY KEY (CUSTOMER_NO),
+    CONSTRAINT FK_KYC_RETAIL_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO)
+);
+
+-- ---------------------------------------------------------------------------
+-- 11. Corporate KYC
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_KYC_CORPORATE (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    ACC_PURPOSE          VARCHAR2(20),
+    ACC_SOLICITED        VARCHAR2(1),
+    ACC_SOLICITED_DATE   DATE,
+    ANNUAL_TURNOVER      NUMBER(20,2),
+    APPROVER_COMMENTS    VARCHAR2(1000),
+    AUDIT_DATE           DATE,
+    BORROW_ACC_GRP       VARCHAR2(20),
+    BUSINESS_APPROVAL    VARCHAR2(1),
+    BUSINESS_NATURE      VARCHAR2(20),
+    COMPANY_TYPE         VARCHAR2(20),
+    COMPLIANCE_CLEARANCE VARCHAR2(1),
+    EMPLOYEE_NUMBER      NUMBER(10),
+    FUNDS_SOURCE         VARCHAR2(255),
+    GROUP_NAME           VARCHAR2(105),
+    INTRODUCER_DTL       VARCHAR2(1000),
+    KYC_AMTS_CCY         VARCHAR2(3),
+    KYC_COMMENTS         VARCHAR2(4000),
+    KYC_NXT_REVIEW_DATE  DATE,
+    LOCAL_ABROAD_BRN     VARCHAR2(1),
+    OTHR_COMPANY_TYPE     VARCHAR2(105),
+    OTHR_SALARY_MODES    VARCHAR2(255),
+    PARENT_CMPNY_COUNTRY VARCHAR2(3),
+    SALARY_MODE          VARCHAR2(20),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_CORP PRIMARY KEY (CUSTOMER_NO),
+    CONSTRAINT FK_KYC_CORP_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO)
+);
+
+-- ---------------------------------------------------------------------------
+-- 12. Corporate key persons / beneficial owners
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_KYC_CORP_KEYPERSONS (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    SERIAL_NO            NUMBER(4)      NOT NULL,
+    NAME                 VARCHAR2(105),
+    ADDRESS              VARCHAR2(255),
+    ADDRESS_COUNTRY      VARCHAR2(3),
+    BIRTH_COUNTRY        VARCHAR2(3),
+    DATE_OF_BIRTH        DATE,
+    ISD_CODE             VARCHAR2(5),
+    NATIONALITY          VARCHAR2(3),
+    OWNERSHIP_TYPE       VARCHAR2(20),
+    PLACE_OF_BIRTH       VARCHAR2(105),
+    POSITION_OR_TITLE    VARCHAR2(105),
+    RELATIONSHIP         VARCHAR2(20),
+    SHARE_HOLDING        NUMBER(7,4),
+    TAX_CNTRY            VARCHAR2(3),
+    TEL_NO               VARCHAR2(20),
+    TIN                  VARCHAR2(40),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_CKEY PRIMARY KEY (CUSTOMER_NO, SERIAL_NO),
+    CONSTRAINT FK_KYC_CKEY_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO),
+    CONSTRAINT CK_KYC_CKEY_HOLD CHECK (SHARE_HOLDING BETWEEN 0 AND 100 OR SHARE_HOLDING IS NULL)
+);
+
+-- ---------------------------------------------------------------------------
+-- 13. KYC declared shareholders
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_KYC_SHARE_HOLDERS (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    SERIAL_NO            NUMBER(4)      NOT NULL,
+    SHAREHOLDER_NAME     VARCHAR2(105),
+    ADDRESS              VARCHAR2(255),
+    CITY                 VARCHAR2(105),
+    COUNTRY              VARCHAR2(3),
+    HOLDING              NUMBER(7,4),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_SHH PRIMARY KEY (CUSTOMER_NO, SERIAL_NO),
+    CONSTRAINT FK_KYC_SHH_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO),
+    CONSTRAINT CK_KYC_SHH_HOLD CHECK (HOLDING BETWEEN 0 AND 100 OR HOLDING IS NULL)
+);
+
+-- ---------------------------------------------------------------------------
+-- 14. KYC transaction profile and expected transaction products
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_KYC_TXN_DETAILS (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    SERIAL_NO            NUMBER(4)      NOT NULL,
+    COUNTRIES            VARCHAR2(500),
+    COUNTRY_PURPOSE      VARCHAR2(255),
+    MAX_COUNT            NUMBER(10),
+    PURPOSE              VARCHAR2(255),
+    SINGLE_MAX_AMT       NUMBER(20,2),
+    TOTAL_AMT            NUMBER(20,2),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_TXN_DTL PRIMARY KEY (CUSTOMER_NO, SERIAL_NO),
+    CONSTRAINT FK_KYC_TXN_DTL_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO)
+);
+
+CREATE TABLE STTM_KYC_TXN_PRODUCTS (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    SERIAL_NO            NUMBER(4)      NOT NULL,
+    PRODUCT_CODE         VARCHAR2(20)   NOT NULL,
+    MONTHLY_AMT          NUMBER(20,2),
+    NO_OF_TXN_MONTHLY    NUMBER(10),
+    RATING               VARCHAR2(20),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_TXN_PROD PRIMARY KEY (CUSTOMER_NO, SERIAL_NO, PRODUCT_CODE),
+    CONSTRAINT FK_KYC_TXN_PROD_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO)
+);
+
+-- ---------------------------------------------------------------------------
+-- 15. Other KYC detail nodes documented by FLEXCUBE integration material
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_KYC_FINANCIAL (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    SERIAL_NO            NUMBER(4)      NOT NULL,
+    BANK_ADDRESS         VARCHAR2(255),
+    COUNTRY              VARCHAR2(3),
+    KYC_AMTS_CCY         VARCHAR2(3),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_FIN PRIMARY KEY (CUSTOMER_NO, SERIAL_NO),
+    CONSTRAINT FK_KYC_FIN_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO)
+);
+
+CREATE TABLE STTM_KYC_CORP_CLIENT (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    SERIAL_NO            NUMBER(4)      NOT NULL,
+    COUNTRIES            VARCHAR2(500),
+    PAYMENT_MODE         VARCHAR2(20),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_CCL PRIMARY KEY (CUSTOMER_NO, SERIAL_NO),
+    CONSTRAINT FK_KYC_CCL_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO)
+);
+
+CREATE TABLE STTM_KYC_CORP_SUPPLIER (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    SERIAL_NO            NUMBER(4)      NOT NULL,
+    COUNTRIES            VARCHAR2(500),
+    SETTLEMENT_MODE      VARCHAR2(20),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_CSUP PRIMARY KEY (CUSTOMER_NO, SERIAL_NO),
+    CONSTRAINT FK_KYC_CSUP_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO)
+);
+
+CREATE TABLE STTM_KYC_MGMNT_DTL (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    SERIAL_NO            NUMBER(4)      NOT NULL,
+    DESIGNATION          VARCHAR2(105),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_MGMT PRIMARY KEY (CUSTOMER_NO, SERIAL_NO),
+    CONSTRAINT FK_KYC_MGMT_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO)
+);
+
+-- ---------------------------------------------------------------------------
+-- 16. KYC compliance / suspicious transaction review audit detail
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_KYC_COMPL_AUDIT_DTL (
+    CUSTOMER_NO          VARCHAR2(9)    NOT NULL,
+    STR_REF_NO           VARCHAR2(30)   NOT NULL,
+    ACTIVITY_STP_CD      VARCHAR2(20),
+    ACTIVITY_STP_CD_REASON VARCHAR2(255),
+    CB_RESPONSE          VARCHAR2(1000),
+    CB_RESPONSE_DATE     DATE,
+    CIS_NUMBER           VARCHAR2(30),
+    DAIRY_NOTE           VARCHAR2(2000),
+    NAME                 VARCHAR2(105),
+    STR_DATE             DATE,
+    STR_RAISED           VARCHAR2(1),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_KYC_AUDIT PRIMARY KEY (CUSTOMER_NO, STR_REF_NO),
+    CONSTRAINT FK_KYC_AUDIT_CIF FOREIGN KEY (CUSTOMER_NO)
+        REFERENCES STTM_CUSTOMER (CUSTOMER_NO)
+);
+
+-- ---------------------------------------------------------------------------
+-- 17. Customer prefix reference data
+-- ---------------------------------------------------------------------------
+CREATE TABLE STTM_CUST_PREFIX_MASTER (
+    CUSTOMER_PREFIX      VARCHAR2(10)  NOT NULL,
+    DESCRIPTION          VARCHAR2(105),
+    RECORD_STAT          VARCHAR2(1) DEFAULT 'O' NOT NULL,
+    AUTH_STAT            VARCHAR2(1) DEFAULT 'U' NOT NULL,
+    MOD_NO               NUMBER(4) DEFAULT 1 NOT NULL,
+    MAKER_ID             VARCHAR2(12) DEFAULT USER NOT NULL,
+    MAKER_DT_STAMP       DATE DEFAULT SYSDATE NOT NULL,
+    CHECKER_ID           VARCHAR2(12),
+    CHECKER_DT_STAMP     DATE,
+    ONCE_AUTH            VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CONSTRAINT PK_STTM_CUST_PREFIX PRIMARY KEY (CUSTOMER_PREFIX)
+);
+
+-- ---------------------------------------------------------------------------
+-- Sample synthetic data (Cambodia-oriented test values; not real customers)
+-- ---------------------------------------------------------------------------
+INSERT INTO STTM_CUST_GROUP (CUST_GROUP, CUST_GROUP_DESC, RECORD_STAT, AUTH_STAT, ONCE_AUTH)
+VALUES ('RETAIL', 'Retail customers', 'O', 'A', 'Y');
+
+INSERT INTO STTM_CUST_GROUP (CUST_GROUP, CUST_GROUP_DESC, RECORD_STAT, AUTH_STAT, ONCE_AUTH)
+VALUES ('SME', 'Small and medium enterprise customers', 'O', 'A', 'Y');
+
+INSERT INTO STTM_CUSTOMER (
+    CUSTOMER_NO, CUSTOMER_TYPE, CUSTOMER_CATEGORY, CUSTOMER_NAME1, CUSTOMER_NAME2,
+    FULL_NAME, SHORT_NAME, ADDRESS_LINE1, ADDRESS_LINE2, COUNTRY, NATIONALITY,
+    LANGUAGE, PINCODE, LOCAL_BRANCH, CUST_GROUP, UNIQUE_ID_NAME, UNIQUE_ID_VALUE,
+    CIF_STATUS, RECORD_STAT, AUTH_STAT, ONCE_AUTH
+) VALUES (
+    '000000101', 'I', 'RETAIL', 'DARA SOK', NULL, 'DARA SOK', 'DARA SOK',
+    'Street 240', 'Phnom Penh', 'KHM', 'KHM', 'ENG', '12000', '001', 'RETAIL',
+    'NATIONAL_ID', 'KH-TRAIN-000101', 'A', 'O', 'A', 'Y'
+);
+
+INSERT INTO STTM_CUST_PERSONAL (
+    CUSTOMER_NO, CUSTOMER_PREFIX, FIRST_NAME, MIDDLE_NAME, LAST_NAME, SEX,
+    DATE_OF_BIRTH, BIRTH_COUNTRY, P_NATIONAL_ID, RESIDENT_STATUS, MINOR,
+    E_MAIL, MOBILE_NUMBER, MOB_ISD_NO, D_ADDRESS1, D_COUNTRY, P_ADDRESS1, P_COUNTRY,
+    RECORD_STAT, AUTH_STAT, ONCE_AUTH
+) VALUES (
+    '000000101', 'Mr.', 'DARA', NULL, 'SOK', 'M', DATE '1998-04-12', 'KHM',
+    'KH-TRAIN-000101', 'R', 'N', 'dara.training@example.test', '123456789', '+855',
+    'Street 240', 'KHM', 'Street 240', 'KHM', 'O', 'A', 'Y'
+);
+
+INSERT INTO STTM_KYC_RETAIL (
+    CUSTOMER_NO, ACC_PURPOSE, ACC_TYPE, BIRTH_COUNTRY, BIRTH_DATE, KYC_AMTS_CCY,
+    KYC_COMMENTS, KYC_NXT_REVIEW_DATE, LOCAL_ADDR_COUNTRY, NATIONALITY,
+    RECORD_STAT, AUTH_STAT, ONCE_AUTH
+) VALUES (
+    '000000101', 'SAVINGS', 'CASA', 'KHM', DATE '1998-04-12', 'USD',
+    'Synthetic training profile', ADD_MONTHS(TRUNC(SYSDATE), 12), 'KHM', 'KHM',
+    'O', 'A', 'Y'
+);
+
+INSERT INTO STTM_CUSTOMER (
+    CUSTOMER_NO, CUSTOMER_TYPE, CUSTOMER_CATEGORY, CUSTOMER_NAME1, CUSTOMER_NAME2,
+    FULL_NAME, SHORT_NAME, ADDRESS_LINE1, ADDRESS_LINE2, COUNTRY, LANGUAGE,
+    PINCODE, LOCAL_BRANCH, CUST_GROUP, UNIQUE_ID_NAME, UNIQUE_ID_VALUE,
+    CIF_STATUS, RECORD_STAT, AUTH_STAT, ONCE_AUTH
+) VALUES (
+    '000000201', 'C', 'CORPORATE', 'MEKONG SAMPLE TRADING CO LTD', NULL,
+    'MEKONG SAMPLE TRADING CO LTD', 'MEKONG TRADING', 'Norodom Boulevard',
+    'Phnom Penh', 'KHM', 'ENG', '12000', '001', 'SME', 'REGISTRATION_NO',
+    'KH-TRAIN-CORP-201', 'A', 'O', 'A', 'Y'
+);
+
+INSERT INTO STTM_CUST_CORPORATE (
+    CUSTOMER_NO, COMPANY_TYPE, BUSINESS_NATURE, GROUP_NAME, EMPLOYEE_NUMBER,
+    ANNUAL_TURNOVER, INCORPORATION_NO, INCORPORATION_DATE, INCORPORATION_COUNTRY,
+    REGISTERED_ADDRESS1, REGISTERED_ADDRESS2, KYC_COMMENTS,
+    RECORD_STAT, AUTH_STAT, ONCE_AUTH
+) VALUES (
+    '000000201', 'LIMITED', 'TRADING', 'MEKONG GROUP', 25, 350000.00,
+    'KH-TRAIN-CORP-201', DATE '2020-06-15', 'KHM', 'Norodom Boulevard',
+    'Phnom Penh', 'Synthetic training corporate KYC', 'O', 'A', 'Y'
+);
+
+INSERT INTO STTM_KYC_CORPORATE (
+    CUSTOMER_NO, ACC_PURPOSE, ACC_SOLICITED, ACC_SOLICITED_DATE,
+    ANNUAL_TURNOVER, BUSINESS_NATURE, COMPANY_TYPE, EMPLOYEE_NUMBER,
+    FUNDS_SOURCE, KYC_AMTS_CCY, KYC_COMMENTS, KYC_NXT_REVIEW_DATE,
+    RECORD_STAT, AUTH_STAT, ONCE_AUTH
+) VALUES (
+    '000000201', 'OPERATING', 'Y', TRUNC(SYSDATE), 350000.00, 'TRADING',
+    'LIMITED', 25, 'BUSINESS_REVENUE', 'USD', 'Synthetic training corporate KYC',
+    ADD_MONTHS(TRUNC(SYSDATE), 12), 'O', 'A', 'Y'
+);
+
+INSERT INTO STTM_KYC_CORP_KEYPERSONS (
+    CUSTOMER_NO, SERIAL_NO, NAME, NATIONALITY, POSITION_OR_TITLE, OWNERSHIP_TYPE,
+    SHARE_HOLDING, ADDRESS_COUNTRY, RECORD_STAT, AUTH_STAT, ONCE_AUTH
+) VALUES (
+    '000000201', 1, 'SAMPLE SHAREHOLDER ONE', 'KHM', 'DIRECTOR', 'DIRECT',
+    60, 'KHM', 'O', 'A', 'Y'
+);
+
+INSERT INTO STTM_KYC_SHARE_HOLDERS (
+    CUSTOMER_NO, SERIAL_NO, SHAREHOLDER_NAME, CITY, COUNTRY, HOLDING,
+    RECORD_STAT, AUTH_STAT, ONCE_AUTH
+) VALUES (
+    '000000201', 1, 'SAMPLE SHAREHOLDER ONE', 'Phnom Penh', 'KHM', 60,
+    'O', 'A', 'Y'
+);
+
+COMMIT;
+
+-- ---------------------------------------------------------------------------
+-- Verification queries - run after installation
+-- ---------------------------------------------------------------------------
+SELECT TABLE_NAME
+FROM USER_TABLES
+WHERE TABLE_NAME LIKE 'STTM%'
+ORDER BY TABLE_NAME;
+
+SELECT CUSTOMER_NO, CUSTOMER_TYPE, CUSTOMER_CATEGORY, CUSTOMER_NAME1,
+       SHORT_NAME, LOCAL_BRANCH, CIF_STATUS, RECORD_STAT, AUTH_STAT
+FROM STTM_CUSTOMER
+ORDER BY CUSTOMER_NO;
+
+SELECT C.CUSTOMER_NO, C.CUSTOMER_NAME1, P.FIRST_NAME, P.LAST_NAME,
+       P.DATE_OF_BIRTH, P.MOBILE_NUMBER
+FROM STTM_CUSTOMER C
+JOIN STTM_CUST_PERSONAL P ON P.CUSTOMER_NO = C.CUSTOMER_NO
+ORDER BY C.CUSTOMER_NO;
+
+SELECT C.CUSTOMER_NO, C.CUSTOMER_NAME1, K.COMPANY_TYPE, K.BUSINESS_NATURE,
+       K.ANNUAL_TURNOVER, K.KYC_NXT_REVIEW_DATE
+FROM STTM_CUSTOMER C
+JOIN STTM_KYC_CORPORATE K ON K.CUSTOMER_NO = C.CUSTOMER_NO
+ORDER BY C.CUSTOMER_NO;
+
+-- End of training schema
