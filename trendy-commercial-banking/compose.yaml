@@ -1,0 +1,26 @@
+name: trendy-commercial-banking
+
+services:
+  oracle:
+    image: container-registry.oracle.com/database/free:latest
+    container_name: trendy-commercial-banking-oracle
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1521:1521"
+    env_file:
+      - .env
+    environment:
+      ORACLE_PWD: ${ORACLE_PWD:?Set ORACLE_PWD in .env}
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'echo "SELECT 1 FROM DUAL;" | sqlplus -s "SYSTEM/$${ORACLE_PWD}@//127.0.0.1:1521/TRENDYDB" | grep -q "1"'
+      interval: 60s
+      timeout: 15s
+      retries: 10
+      start_period: 15m
+
+volumes:
+  oracle-data:

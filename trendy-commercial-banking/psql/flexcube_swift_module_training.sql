@@ -1,0 +1,857 @@
+-- ============================================================================
+-- FLEXCUBE Payments / SWIFT module - REAL FLEXCUBE OBJECT NAMES, LAB SUBSET
+-- Target: Oracle Database Free 23ai/26ai; run ONLY in the isolated CB_LAB schema.
+--
+-- IMPORTANT ACCURACY / SAFETY NOTES
+-- 1) Table names below are real FLEXCUBE Universal Banking object names found
+--    in publicly available Oracle/FLEXCUBE data-model and FT documentation.
+-- 2) This is NOT the complete official FCUBS 14.1 DDL. It is an educational,
+--    deliberately reduced table subset. Column availability/types and message
+--    status codes can differ by FLEXCUBE release and installed components.
+-- 3) Do NOT run this CREATE TABLE script against a licensed FLEXCUBE schema.
+--    It creates reduced tables in your isolated Oracle Free CB_LAB schema.
+-- 4) FCUBS_SWIFT_LAB_PKG is a custom training package, NOT an Oracle package.
+-- 5) No SWIFT network, sanctions service, gateway or live bank ledger is used.
+--
+-- Real FLEXCUBE objects represented in this lab include:
+--   MSTB_DLY_MSG_IN            Incoming SWIFT message queue
+--   MSTB_DLY_MSG_IN_TEMP       Temporary incoming SWIFT messages
+--   MSTB_DLY_MSG_OUT           Outgoing SWIFT message queue
+--   MSTB_ADV_INPUT             Advice/message input tags
+--   ISTB_CONVERTED_FIELDS      Converted inbound SWIFT tag details
+--   ISTB_INSTR_CODES           MT103 field 23E instruction-code reference
+--   ISTB_ISIBAN_DIRECTORY      IBAN country/position metadata
+--   ISTM_BIC_DIRECTORY         BIC directory
+--   ISTM_BIC_LINES             BIC address lines
+--   ISTM_BENEF_ACC             Beneficiary bank/account details
+--   ISTM_TXNCCY_LIMIT_MASTER   Bilateral message type/cut-off setup
+--   ISTM_TXNCCY_LIMIT_DETAILS  Bilateral limits by currency
+--   MSTB_INCOMING_ROUTING      Incoming SWIFT routing setup
+--   ISTB_MSGHO                 Contract settlement/message details
+--
+-- Other real related objects not recreated here (their full DDL is release-
+-- specific and extensive): FTTB_CONTRACT_MASTER, FTTB_ACTIVITY_JOURNAL,
+-- CSTBS_EXT_CONTRACT_STAT, FTTBS_UPLOAD_MASTER, ISTBS_UPLOAD_CONTRACTIS,
+-- CFTBS_UPLOAD_CHARGE, TATBS_UPLOAD_RULE, MITBS_CONTRACT_MAPPING_UPLOAD,
+-- CSTBS_UPLOAD_CONTRACT_UDF, FTTBS_UPLOAD_EXCEPTION, FTTBS_UPLOAD_LOG,
+-- MSTB_EXT_MSG_OUT, MSTB_ARCHIVE_OUT, MSTB_MSG_STAT, MSTB_MSG_PDE_LOG.
+--
+-- Reference documentation:
+-- Oracle FLEXCUBE FT guide (STP Message Upload and FT gateway tables):
+-- https://docs.oracle.com/cd/E87132_01/PDF/FT/FT.pdf
+-- Oracle FLEXCUBE Database Practices (lists MSTB_DLY_MSG_OUT and related tables):
+-- https://docs.oracle.com/cd/F20443_01/PDF/Installation/Environment%20Setup/Database%20server/FLEXCUBE_UBS_Database_Practices.pdf
+-- Public FLEXCUBE data model references describe the fields used for the reduced
+-- message/BIC examples; compare against your authorized release's data dictionary.
+-- ============================================================================
+
+SET DEFINE OFF
+SET SERVEROUTPUT ON
+
+PROMPT Creating FLEXCUBE-named BIC and bilateral configuration tables...
+
+CREATE TABLE ISTM_BIC_DIRECTORY (
+    BIC_CODE              VARCHAR2(11) CONSTRAINT PK_ISTM_BIC_DIRECTORY PRIMARY KEY,
+    BANK_NAME             VARCHAR2(35),
+    CUSTOMER_NO           VARCHAR2(9),
+    SK_ARRANGEMENT        VARCHAR2(1),
+    MOD_NO                NUMBER(4),
+    RECORD_STAT           CHAR(1),
+    MAKER_ID              VARCHAR2(12),
+    MAKER_DT_STAMP        DATE,
+    CHECKER_ID            VARCHAR2(12),
+    CHECKER_DT_STAMP      DATE,
+    ONCE_AUTH             CHAR(1),
+    AUTH_STAT             CHAR(1),
+    BANK_ADDRESS1         VARCHAR2(35),
+    BANK_ADDRESS2         VARCHAR2(35),
+    BANK_ADDRESS3         VARCHAR2(35),
+    RELATIONSHIP          VARCHAR2(1),
+    SWIFT_KEY             VARCHAR2(50),
+    TELEX_KEY             VARCHAR2(50),
+    UPLOAD_FLAG           CHAR(1) DEFAULT 'Y',
+    UPLOAD_UPDATE         CHAR(1),
+    GEN_MT103             VARCHAR2(1),
+    BLACKLISTED           CHAR(1) DEFAULT 'N',
+    CUG_MEMBER            VARCHAR2(1),
+    GEN_MT103P            VARCHAR2(1),
+    MULTI_CUST_TRANSFER   CHAR(1),
+    MAX_SIZE              NUMBER(38),
+    REMIT_MEMBER          VARCHAR2(1),
+    SUB_TYPE_CODE         VARCHAR2(4),
+    GEN_MT102P            VARCHAR2(1),
+    GEN_MT101             VARCHAR2(1),
+    TRANSACTION_PER_MSG   NUMBER
+);
+
+CREATE TABLE ISTM_BIC_LINES (
+    BIC_CODE          VARCHAR2(11) CONSTRAINT PK_ISTM_BIC_LINES PRIMARY KEY,
+    ADDRESS_1         VARCHAR2(105),
+    ADDRESS_2         VARCHAR2(105),
+    ADDRESS_3         VARCHAR2(105),
+    ADDRESS_4         VARCHAR2(105),
+    MAKER_ID          VARCHAR2(12),
+    MAKER_DT_STAMP    DATE,
+    CHECKER_ID        VARCHAR2(12),
+    CHECKER_DT_STAMP  DATE,
+    ONCE_AUTH         CHAR(1),
+    RECORD_STAT       CHAR(1),
+    AUTH_STAT         CHAR(1),
+    MOD_NO            NUMBER(4),
+    CONSTRAINT FK_ISTM_BIC_LINES_BIC FOREIGN KEY (BIC_CODE)
+        REFERENCES ISTM_BIC_DIRECTORY (BIC_CODE)
+);
+
+CREATE TABLE ISTM_TXNCCY_LIMIT_MASTER (
+    BIC_CODE              VARCHAR2(11) NOT NULL,
+    SWIFT_MSG_TYPE        VARCHAR2(4)  NOT NULL,
+    TYPE                  VARCHAR2(1)  NOT NULL,
+    CUTOFF_INCOMING_HR    NUMBER(2),
+    CUTOFF_INCOMING_MIN   NUMBER(2),
+    CUTOFF_OUTGOING_HR    NUMBER(2),
+    CUTOFF_OUTGOING_MIN   NUMBER(2),
+    CONSOL_DEBIT_PRODUCT  VARCHAR2(4),
+    TRANSACTION_PER_MSG   NUMBER,
+    MOD_NO                NUMBER(4),
+    RECORD_STAT           CHAR(1),
+    MAKER_ID              VARCHAR2(12),
+    MAKER_DT_STAMP        DATE,
+    CHECKER_ID            VARCHAR2(12),
+    CHECKER_DT_STAMP      DATE,
+    ONCE_AUTH             VARCHAR2(1),
+    AUTH_STAT             CHAR(1),
+    BRANCH_CODE           VARCHAR2(3),
+    CONSTRAINT PK_ISTM_TXNCCY_LIMIT_MASTER
+        PRIMARY KEY (BIC_CODE, SWIFT_MSG_TYPE, TYPE),
+    CONSTRAINT FK_ISTM_TXNCCY_LIMIT_BIC FOREIGN KEY (BIC_CODE)
+        REFERENCES ISTM_BIC_DIRECTORY (BIC_CODE),
+    CONSTRAINT CK_ISTM_TXNCCY_LIMIT_TYPE CHECK (TYPE IN ('I','O','B'))
+);
+
+CREATE TABLE ISTM_TXNCCY_LIMIT_DETAILS (
+    BIC_CODE        VARCHAR2(11) NOT NULL,
+    SWIFT_MSG_TYPE  VARCHAR2(4)  NOT NULL,
+    TYPE            VARCHAR2(1)  NOT NULL,
+    CURRENCY_CODE   VARCHAR2(3)  NOT NULL,
+    LIMIT_AMOUNT    NUMBER(22,3),
+    CONSTRAINT PK_ISTM_TXNCCY_LIMIT_DETAILS
+        PRIMARY KEY (BIC_CODE, SWIFT_MSG_TYPE, TYPE, CURRENCY_CODE),
+    CONSTRAINT FK_ISTM_TXNCCY_LIMIT_DETAILS_MASTER
+        FOREIGN KEY (BIC_CODE, SWIFT_MSG_TYPE, TYPE)
+        REFERENCES ISTM_TXNCCY_LIMIT_MASTER (BIC_CODE, SWIFT_MSG_TYPE, TYPE),
+    CONSTRAINT CK_ISTM_TXNCCY_LIMIT_AMOUNT CHECK (LIMIT_AMOUNT IS NULL OR LIMIT_AMOUNT >= 0)
+);
+
+CREATE TABLE ISTM_BENEF_ACC (
+    BENEF_NAME       VARCHAR2(105) NOT NULL,
+    BENEF_AC_NO      VARCHAR2(105) NOT NULL,
+    BIC_CODE_AWI     VARCHAR2(11)  NOT NULL,
+    BENEF_ADDRESS1   VARCHAR2(105),
+    BENEF_ADDRESS2   VARCHAR2(105),
+    CUSTOMER_NO      VARCHAR2(9),
+    MOD_NO           NUMBER(4),
+    AUTH_STAT        CHAR(1),
+    RECORD_STAT      CHAR(1),
+    MAKER_ID         VARCHAR2(12),
+    MAKER_DT_STAMP   DATE,
+    CHECKER_ID       VARCHAR2(12),
+    CHECKER_DT_STAMP DATE,
+    ONCE_AUTH        CHAR(1),
+    RECEIVER         VARCHAR2(11),
+    SEQ_NO           VARCHAR2(10),
+    COUNTRY_CODE     VARCHAR2(3),
+    BEN_FAX          VARCHAR2(105),
+    BEN_MOB          VARCHAR2(105),
+    BEN_EMAIL        VARCHAR2(255),
+    CONSTRAINT PK_ISTM_BENEF_ACC PRIMARY KEY (BENEF_AC_NO, BENEF_NAME, BIC_CODE_AWI),
+    CONSTRAINT FK_ISTM_BENEF_ACC_BIC FOREIGN KEY (BIC_CODE_AWI)
+        REFERENCES ISTM_BIC_DIRECTORY (BIC_CODE)
+);
+
+PROMPT Creating message queue and tag tables...
+
+CREATE TABLE MSTB_DLY_MSG_IN (
+    DCN                   VARCHAR2(16) CONSTRAINT PK_MSTB_DLY_MSG_IN PRIMARY KEY,
+    REFERENCE_NO          VARCHAR2(30),
+    SENDER                VARCHAR2(12),
+    SERIAL_NO             NUMBER(2),
+    MEDIA                 VARCHAR2(15),
+    SWIFT_MSG_TYPE        VARCHAR2(30),
+    MCS                   VARCHAR2(15),
+    NODE                  VARCHAR2(105),
+    NAME                  VARCHAR2(105),
+    ADDRESS1              VARCHAR2(105),
+    ADDRESS2              VARCHAR2(105),
+    ADDRESS3              VARCHAR2(105),
+    ADDRESS4              VARCHAR2(105),
+    LOCATION              VARCHAR2(15),
+    MSG_STATUS            CHAR(1),
+    TESTWORD              VARCHAR2(20),
+    TESTING_STATUS        CHAR(1),
+    PRINT_STATUS          CHAR(1),
+    BRANCH_DATE           DATE,
+    MAKER_ID              VARCHAR2(12),
+    MAKER_DT_STAMP        DATE,
+    MESSAGE               CLOB,
+    REPAIR_REASON         VARCHAR2(20),
+    RUNNING_NO            NUMBER(2),
+    GENERATED_REF_NO      VARCHAR2(16),
+    QUEUE                 VARCHAR2(10),
+    PROCESS_STATUS        CHAR(1),
+    REPAIR_REASON_PARAMS  VARCHAR2(255),
+    AUTH_STAT             CHAR(1),
+    CHECKER_DT_STAMP      DATE,
+    CHECKER_ID            VARCHAR2(12),
+    LATEST_VERSION_NO     NUMBER(4),
+    ONCE_AUTH             CHAR(1),
+    MIR                   VARCHAR2(28),
+    REMARKS               VARCHAR2(4000),
+    REJECT_REASON         VARCHAR2(4000),
+    STATUS                VARCHAR2(1),
+    FORCE_RELEASE_FUND    VARCHAR2(1),
+    FORCE_COVER_MATCH     VARCHAR2(1),
+    CCY                   VARCHAR2(3),
+    AMOUNT                NUMBER(30,12),
+    VALUE_DATE            DATE,
+    SUPPRESS_MESSAGE      VARCHAR2(1),
+    RECEIVER              VARCHAR2(12),
+    INSTR_CCY             VARCHAR2(3),
+    INSTR_AMOUNT          NUMBER,
+    BRANCH                VARCHAR2(3),
+    FORMATTEDMSG          CLOB
+);
+
+CREATE TABLE MSTB_DLY_MSG_IN_TEMP (
+    DCN      VARCHAR2(16),
+    MESSAGE  CLOB
+);
+
+CREATE TABLE MSTB_ADV_INPUT (
+    DCN        VARCHAR2(16) NOT NULL,
+    FIELD_TAG  VARCHAR2(50) NOT NULL,
+    LOOP_NO    NUMBER(3)   NOT NULL,
+    VALUE      VARCHAR2(2000),
+    JUSTIFY    CHAR(1),
+    CONSTRAINT PK_MSTB_ADV_INPUT PRIMARY KEY (DCN, FIELD_TAG, LOOP_NO)
+);
+
+CREATE TABLE ISTB_CONVERTED_FIELDS (
+    DCN             VARCHAR2(16) NOT NULL,
+    SENDER          VARCHAR2(16),
+    SWIFT_MSG_TYPE  VARCHAR2(5),
+    SWIFT_FIELD     VARCHAR2(2) NOT NULL,
+    MATCHED_BIC_CODE VARCHAR2(11),
+    ADDRESS_1       VARCHAR2(105),
+    ADDRESS_2       VARCHAR2(105),
+    ADDRESS_3       VARCHAR2(105),
+    ADDRESS_4       VARCHAR2(105),
+    MATCHED_DATE    DATE,
+    D_TO_A_MATCHED  VARCHAR2(1),
+    VERSION_NO      NUMBER(4) NOT NULL,
+    CONSTRAINT PK_ISTB_CONVERTED_FIELDS
+        PRIMARY KEY (DCN, VERSION_NO, SWIFT_FIELD),
+    CONSTRAINT FK_ISTB_CONVERTED_FIELDS_IN
+        FOREIGN KEY (DCN) REFERENCES MSTB_DLY_MSG_IN (DCN),
+    CONSTRAINT FK_ISTB_CONVERTED_FIELDS_BIC
+        FOREIGN KEY (MATCHED_BIC_CODE) REFERENCES ISTM_BIC_DIRECTORY (BIC_CODE)
+);
+
+CREATE TABLE ISTB_INSTR_CODES (
+    CODE    VARCHAR2(4) CONSTRAINT PK_ISTB_INSTR_CODES PRIMARY KEY,
+    SEQ_NO  NUMBER(2)
+);
+
+CREATE TABLE ISTB_ISIBAN_DIRECTORY (
+    IBAN_COUNTRY_CODE             VARCHAR2(2) CONSTRAINT PK_ISTB_ISIBAN_DIRECTORY PRIMARY KEY,
+    IBAN_COUNTRY_CODE_POSITION    NUMBER(2),
+    IBAN_COUNTRY_CODE_LENGTH      NUMBER(1),
+    IBAN_CHECK_DIGITS_POSITION    NUMBER(2),
+    IBAN_CHECK_DIGITS_LENGTH      NUMBER(2),
+    BANK_IDENTIFIER_POSITION      NUMBER(2),
+    BANK_IDENTIFIER_LENGTH        NUMBER(2),
+    BRANCH_IDENTIFIER_POSITION    NUMBER(2),
+    BRANCH_IDENTIFIER_LENGTH      NUMBER(2),
+    IBAN_NATIONAL_ID_LENGTH       NUMBER(2),
+    ACCOUNT_NUMBER_POSITION       NUMBER(2),
+    ACCOUNT_NUMBER_LENGTH         NUMBER(2),
+    IBAN_TOTAL_LENGTH             NUMBER(2),
+    AUTH_STAT                     VARCHAR2(1),
+    CHECKER_DT_STAMP              DATE,
+    CHECKER_ID                    VARCHAR2(30),
+    MAKER_DT_STAMP                DATE,
+    MAKER_ID                      VARCHAR2(30),
+    MOD_NO                        NUMBER,
+    ONCE_AUTH                     CHAR(1),
+    RECORD_STAT                   CHAR(1)
+);
+
+CREATE TABLE MSTB_INCOMING_ROUTING (
+    MEDIA            VARCHAR2(15) NOT NULL,
+    MSGTYPE          VARCHAR2(10) NOT NULL,
+    BRANCH           VARCHAR2(3)  NOT NULL,
+    QUEUE            VARCHAR2(10),
+    AUTH_STAT        VARCHAR2(1),
+    RECORD_STAT      VARCHAR2(1),
+    ONCE_AUTH        VARCHAR2(1),
+    MAKER_ID         VARCHAR2(12),
+    MAKER_DT_STAMP   DATE,
+    CHECKER_ID       VARCHAR2(12),
+    CHECKER_DT_STAMP DATE,
+    MOD_NO           NUMBER(4),
+    BIC_CODE         VARCHAR2(11),
+    CURRENCY         VARCHAR2(3),
+    CONSTRAINT PK_MSTB_INCOMING_ROUTING
+        PRIMARY KEY (MEDIA, MSGTYPE, BRANCH, BIC_CODE, CURRENCY),
+    CONSTRAINT FK_MSTB_INCOMING_ROUTING_BIC FOREIGN KEY (BIC_CODE)
+        REFERENCES ISTM_BIC_DIRECTORY (BIC_CODE)
+);
+
+CREATE TABLE ISTB_MSGHO (
+    CONTRACT_REF_NO    VARCHAR2(16),
+    EVENT_SEQ_NO       NUMBER,
+    MSG_TYPE           VARCHAR2(15),
+    RECEIVER           VARCHAR2(11),
+    SERIAL_NO          NUMBER(2),
+    ACC_BRANCH         VARCHAR2(3),
+    ACCOUNT            VARCHAR2(20),
+    ACC_CCY            VARCHAR2(3),
+    TAG_CCY            VARCHAR2(3),
+    EX_RATE            NUMBER(24,12),
+    SETTLEMENT_AMT     NUMBER(22,3),
+    VALUE_DATE         DATE,
+    PAY_RECEIVE        CHAR(1),
+    COUNTERPARTY       VARCHAR2(9),
+    INSTRUMENT_TYPE    VARCHAR2(15),
+    INSTRUMENT_NO      VARCHAR2(240),
+    CHARGES_DETAILS    CHAR(1),
+    OUR_CORRESPONDENT  VARCHAR2(11),
+    ACC_WITH_INSTN1    VARCHAR2(105),
+    ACC_WITH_INSTN2    VARCHAR2(105),
+    ACC_WITH_INSTN3    VARCHAR2(105),
+    ACC_WITH_INSTN4    VARCHAR2(105),
+    RCVR_CORRESP1      VARCHAR2(105),
+    RCVR_CORRESP2      VARCHAR2(105),
+    RCVR_CORRESP3      VARCHAR2(105),
+    RCVR_CORRESP4      VARCHAR2(105),
+    INTERMEDIARY1      VARCHAR2(105),
+    INTERMEDIARY2      VARCHAR2(105),
+    INTERMEDIARY3      VARCHAR2(105),
+    INTERMEDIARY4      VARCHAR2(105),
+    SNDR_TO_RCVR_INFO1 VARCHAR2(105),
+    SNDR_TO_RCVR_INFO2 VARCHAR2(105),
+    SNDR_TO_RCVR_INFO3 VARCHAR2(105),
+    SNDR_TO_RCVR_INFO4 VARCHAR2(105),
+    SNDR_TO_RCVR_INFO5 VARCHAR2(105)
+);
+
+PROMPT Creating outgoing SWIFT message table MSTB_DLY_MSG_OUT...
+
+CREATE TABLE MSTB_DLY_MSG_OUT (
+    BRANCH              VARCHAR2(3),
+    DCN                 VARCHAR2(16) CONSTRAINT PK_MSTB_DLY_MSG_OUT PRIMARY KEY,
+    REFERENCE_NO        VARCHAR2(30),
+    ESN                 NUMBER,
+    MODULE              VARCHAR2(2),
+    MSG_TYPE            VARCHAR2(15),
+    RECEIVER            VARCHAR2(12),
+    SERIAL_NO           NUMBER(2),
+    CCY                 VARCHAR2(3),
+    PRODUCT             VARCHAR2(4),
+    AMOUNT              NUMBER(22,3),
+    MEDIA               VARCHAR2(15),
+    SWIFT_MSG_TYPE      VARCHAR2(30),
+    MCS                 VARCHAR2(15),
+    NODE                VARCHAR2(35),
+    FORMAT              VARCHAR2(15),
+    LANGUAGE            VARCHAR2(3),
+    NO_OF_COPIES        NUMBER(2),
+    PRIORITY            NUMBER(1),
+    NAME                VARCHAR2(150),
+    ADDRESS1            VARCHAR2(35),
+    ADDRESS2            VARCHAR2(35),
+    ADDRESS3            VARCHAR2(35),
+    ADDRESS4            VARCHAR2(35),
+    LOCATION            VARCHAR2(15),
+    COPY                CHAR(1),
+    DIRECTIVE_STATUS    CHAR(1),
+    SUPPRESS_FLAG       CHAR(1),
+    INSERT_TIME         DATE,
+    GENERATE_STATUS     CHAR(1),
+    MSG_STATUS          CHAR(1),
+    HANDOFF_TIME        DATE,
+    TESTWORD            VARCHAR2(20),
+    TESTING_STATUS      CHAR(1),
+    PRINT_STATUS        CHAR(1),
+    BRANCH_DATE         DATE,
+    AUTH_STAT           CHAR(1),
+    MAKER_ID            VARCHAR2(12),
+    MAKER_DT_STAMP      DATE,
+    CHECKER_ID          VARCHAR2(12),
+    CHECKER_DT_STAMP    DATE,
+    ONCE_AUTH           CHAR(1),
+    MESSAGE             CLOB,
+    FORM_ID             VARCHAR2(3),
+    MULTIPLE_MSG        CHAR(1),
+    TO_DATE             DATE,
+    FROM_DATE           DATE,
+    REPAIR_REASON       VARCHAR2(20),
+    RUNNING_NO          NUMBER(3),
+    NO_OF_HANDOFF       NUMBER(3),
+    HOLD_STATUS         CHAR(1),
+    PROCESSED_FLAG      CHAR(1),
+    OTHER_BRANCH        VARCHAR2(3),
+    ANSWERBACK          VARCHAR2(20),
+    TW_KEYWORD          VARCHAR2(10),
+    PARENT_DCN          VARCHAR2(16),
+    TOBE_PROCESSED_FLAG CHAR(1),
+    TESTWORD_STATUS     CHAR(1),
+    TESTAMOUNT          NUMBER(22,2),
+    TESTDATE            DATE,
+    TESTCURRENCY        VARCHAR2(3),
+    TESTNARRATIVE       VARCHAR2(100),
+    TOBE_EMAILED        CHAR(1),
+    QUEUE_INDEX         CHAR(12),
+    CUST_AC_NO          VARCHAR2(20),
+    FORM_NO             VARCHAR2(16),
+    EOC_FLAG            VARCHAR2(1),
+    ACK_NACK_STATUS     VARCHAR2(1),
+    DELIVERY_BY         VARCHAR2(20),
+    PDE_FLAG            CHAR(1),
+    MSG_TRAILER         CHAR(1)
+);
+
+PROMPT Loading fictional lab reference data and sample messages...
+
+INSERT INTO ISTM_BIC_DIRECTORY (
+    BIC_CODE, BANK_NAME, CUSTOMER_NO, SK_ARRANGEMENT, MOD_NO, RECORD_STAT,
+    MAKER_ID, MAKER_DT_STAMP, CHECKER_ID, CHECKER_DT_STAMP, ONCE_AUTH,
+    AUTH_STAT, BANK_ADDRESS1, BANK_ADDRESS2, BANK_ADDRESS3, RELATIONSHIP,
+    UPLOAD_FLAG, UPLOAD_UPDATE, GEN_MT103, BLACKLISTED, CUG_MEMBER,
+    GEN_MT103P, MULTI_CUST_TRANSFER, MAX_SIZE, REMIT_MEMBER, SUB_TYPE_CODE,
+    GEN_MT102P, GEN_MT101, TRANSACTION_PER_MSG
+) VALUES (
+    'TSTBKHPPXXX', 'TRAINING TEST BANK KH', '000000101', 'N', 1, 'O',
+    'LABMAKER', SYSDATE, 'LABCHECKER', SYSDATE, 'Y', 'A',
+    'Training Address 1', 'Phnom Penh', 'Cambodia', 'N',
+    'Y', 'Y', 'Y', 'N', 'N', 'N', 'N', 1000000, 'N', 'BANK', 'N', 'N', 1
+);
+
+INSERT INTO ISTM_BIC_DIRECTORY (
+    BIC_CODE, BANK_NAME, CUSTOMER_NO, SK_ARRANGEMENT, MOD_NO, RECORD_STAT,
+    MAKER_ID, MAKER_DT_STAMP, CHECKER_ID, CHECKER_DT_STAMP, ONCE_AUTH,
+    AUTH_STAT, BANK_ADDRESS1, BANK_ADDRESS2, BANK_ADDRESS3, RELATIONSHIP,
+    UPLOAD_FLAG, UPLOAD_UPDATE, GEN_MT103, BLACKLISTED, CUG_MEMBER,
+    GEN_MT103P, MULTI_CUST_TRANSFER, MAX_SIZE, REMIT_MEMBER, SUB_TYPE_CODE,
+    GEN_MT102P, GEN_MT101, TRANSACTION_PER_MSG
+) VALUES (
+    'DEMOUS33XXX', 'FICTIONAL DEMO RECEIVER BANK', '000000102', 'N', 1, 'O',
+    'LABMAKER', SYSDATE, 'LABCHECKER', SYSDATE, 'Y', 'A',
+    '100 Training Street', 'Example City', 'United States', 'N',
+    'Y', 'Y', 'Y', 'N', 'N', 'N', 'N', 1000000, 'N', 'BANK', 'N', 'N', 1
+);
+
+INSERT INTO ISTM_BIC_LINES (BIC_CODE, ADDRESS_1, ADDRESS_2, ADDRESS_3, ADDRESS_4,
+                            MAKER_ID, MAKER_DT_STAMP, CHECKER_ID, CHECKER_DT_STAMP,
+                            ONCE_AUTH, RECORD_STAT, AUTH_STAT, MOD_NO)
+VALUES ('DEMOUS33XXX', '100 Training Street', 'Example City', 'United States', NULL,
+        'LABMAKER', SYSDATE, 'LABCHECKER', SYSDATE, 'Y', 'O', 'A', 1);
+
+INSERT INTO ISTM_TXNCCY_LIMIT_MASTER (
+    BIC_CODE, SWIFT_MSG_TYPE, TYPE,
+    CUTOFF_INCOMING_HR, CUTOFF_INCOMING_MIN,
+    CUTOFF_OUTGOING_HR, CUTOFF_OUTGOING_MIN,
+    CONSOL_DEBIT_PRODUCT, TRANSACTION_PER_MSG,
+    MOD_NO, RECORD_STAT, MAKER_ID, MAKER_DT_STAMP, CHECKER_ID,
+    CHECKER_DT_STAMP, ONCE_AUTH, AUTH_STAT, BRANCH_CODE
+) VALUES (
+    'DEMOUS33XXX', '103', 'O', 17, 0, 17, 0,
+    'FTR1', 1, 1, 'O', 'LABMAKER', SYSDATE, 'LABCHECKER', SYSDATE,
+    'Y', 'A', '001'
+);
+
+INSERT INTO ISTM_TXNCCY_LIMIT_DETAILS (
+    BIC_CODE, SWIFT_MSG_TYPE, TYPE, CURRENCY_CODE, LIMIT_AMOUNT
+) VALUES ('DEMOUS33XXX', '103', 'O', 'USD', 100000);
+
+INSERT INTO ISTM_TXNCCY_LIMIT_MASTER (
+    BIC_CODE, SWIFT_MSG_TYPE, TYPE,
+    CUTOFF_INCOMING_HR, CUTOFF_INCOMING_MIN,
+    CUTOFF_OUTGOING_HR, CUTOFF_OUTGOING_MIN,
+    CONSOL_DEBIT_PRODUCT, TRANSACTION_PER_MSG,
+    MOD_NO, RECORD_STAT, MAKER_ID, MAKER_DT_STAMP, CHECKER_ID,
+    CHECKER_DT_STAMP, ONCE_AUTH, AUTH_STAT, BRANCH_CODE
+) VALUES (
+    'TSTBKHPPXXX', '103', 'I', 17, 0, 17, 0,
+    'FTR1', 1, 1, 'O', 'LABMAKER', SYSDATE, 'LABCHECKER', SYSDATE,
+    'Y', 'A', '001'
+);
+
+INSERT INTO ISTM_TXNCCY_LIMIT_DETAILS (
+    BIC_CODE, SWIFT_MSG_TYPE, TYPE, CURRENCY_CODE, LIMIT_AMOUNT
+) VALUES ('TSTBKHPPXXX', '103', 'I', 'USD', 100000);
+
+INSERT INTO ISTM_BENEF_ACC (
+    BENEF_NAME, BENEF_AC_NO, BIC_CODE_AWI, BENEF_ADDRESS1, BENEF_ADDRESS2,
+    CUSTOMER_NO, MOD_NO, AUTH_STAT, RECORD_STAT, MAKER_ID, MAKER_DT_STAMP,
+    CHECKER_ID, CHECKER_DT_STAMP, ONCE_AUTH, RECEIVER, SEQ_NO,
+    COUNTRY_CODE, BEN_EMAIL
+) VALUES (
+    'TRAINING BENEFICIARY', '123456789012', 'DEMOUS33XXX',
+    '100 Training Street', 'Example City', '000000102', 1, 'A', 'O',
+    'LABMAKER', SYSDATE, 'LABCHECKER', SYSDATE, 'Y', 'DEMOUS33XXX', '1',
+    'USA', 'beneficiary@example.invalid'
+);
+
+INSERT INTO ISTB_INSTR_CODES (CODE, SEQ_NO) VALUES ('CHQB', 1);
+INSERT INTO ISTB_INSTR_CODES (CODE, SEQ_NO) VALUES ('CORT', 2);
+INSERT INTO ISTB_INSTR_CODES (CODE, SEQ_NO) VALUES ('INTC', 3);
+INSERT INTO ISTB_INSTR_CODES (CODE, SEQ_NO) VALUES ('REPA', 4);
+INSERT INTO ISTB_INSTR_CODES (CODE, SEQ_NO) VALUES ('SDVA', 5);
+
+INSERT INTO ISTB_ISIBAN_DIRECTORY (
+    IBAN_COUNTRY_CODE, IBAN_COUNTRY_CODE_POSITION, IBAN_COUNTRY_CODE_LENGTH,
+    IBAN_CHECK_DIGITS_POSITION, IBAN_CHECK_DIGITS_LENGTH,
+    BANK_IDENTIFIER_POSITION, BANK_IDENTIFIER_LENGTH,
+    BRANCH_IDENTIFIER_POSITION, BRANCH_IDENTIFIER_LENGTH,
+    IBAN_NATIONAL_ID_LENGTH, ACCOUNT_NUMBER_POSITION, ACCOUNT_NUMBER_LENGTH,
+    IBAN_TOTAL_LENGTH, AUTH_STAT, CHECKER_DT_STAMP, CHECKER_ID,
+    MAKER_DT_STAMP, MAKER_ID, MOD_NO, ONCE_AUTH, RECORD_STAT
+) VALUES (
+    'GB', 1, 2, 3, 2, 5, 4, 9, 6, 10, 15, 8, 22,
+    'A', SYSDATE, 'LABCHECKER', SYSDATE, 'LABMAKER', 1, 'Y', 'O'
+);
+
+INSERT INTO MSTB_INCOMING_ROUTING (
+    MEDIA, MSGTYPE, BRANCH, QUEUE, AUTH_STAT, RECORD_STAT, ONCE_AUTH,
+    MAKER_ID, MAKER_DT_STAMP, CHECKER_ID, CHECKER_DT_STAMP, MOD_NO,
+    BIC_CODE, CURRENCY
+) VALUES (
+    'SWIFT', 'MT103', '001', 'LABIN', 'A', 'O', 'Y',
+    'LABMAKER', SYSDATE, 'LABCHECKER', SYSDATE, 1,
+    'DEMOUS33XXX', 'USD'
+);
+
+INSERT INTO MSTB_DLY_MSG_IN (
+    DCN, REFERENCE_NO, SENDER, SERIAL_NO, MEDIA, SWIFT_MSG_TYPE, MCS,
+    NODE, NAME, ADDRESS1, LOCATION, MSG_STATUS, BRANCH_DATE, MAKER_ID,
+    MAKER_DT_STAMP, MESSAGE, QUEUE, PROCESS_STATUS, AUTH_STAT,
+    LATEST_VERSION_NO, ONCE_AUTH, CCY, AMOUNT, VALUE_DATE, RECEIVER, BRANCH
+) VALUES (
+    'TRIN000000000001', 'INREF0000000001', 'DEMOUS33XXX', 1, 'SWIFT', 'MT103',
+    'SWIFT', 'LABNODE', 'FICTIONAL DEMO RECEIVER BANK', 'Example City', 'NYC',
+    'U', DATE '2026-10-11', 'LABMAKER', SYSDATE,
+    TO_CLOB(q'~{1:F01DEMOUS33AXXX0000000000}{2:I103TSTBKHPPXXXXN}{4:
+:20:INREF0000000001
+:23B:CRED
+:32A:261011USD125,00
+:50K:/123456789
+SAMPLE ORDERING CUSTOMER
+:59:/123456789012
+TRAINING BENEFICIARY
+:70:INBOUND LAB PAYMENT
+:71A:SHA
+-}~'),
+    'LABIN', 'U', 'A', 1, 'Y', 'USD', 125, DATE '2026-10-11', 'TSTBKHPPXXX', '001'
+);
+
+INSERT INTO MSTB_DLY_MSG_IN_TEMP (DCN, MESSAGE)
+VALUES ('TRIN000000000002', TO_CLOB(q'~{1:F01DEMOUS33AXXX0000000000}{2:I103TSTBKHPPXXXXN}{4:
+:20:TEMPIN00000001
+:23B:CRED
+:32A:261011USD25,00
+-}~'));
+
+INSERT INTO MSTB_ADV_INPUT (DCN, FIELD_TAG, LOOP_NO, VALUE, JUSTIFY)
+VALUES ('TRIN000000000001', ':20:', 1, 'INREF0000000001', 'L');
+INSERT INTO MSTB_ADV_INPUT (DCN, FIELD_TAG, LOOP_NO, VALUE, JUSTIFY)
+VALUES ('TRIN000000000001', ':32A:', 1, '261011USD125,00', 'L');
+
+INSERT INTO ISTB_CONVERTED_FIELDS (
+    DCN, SENDER, SWIFT_MSG_TYPE, SWIFT_FIELD, MATCHED_BIC_CODE,
+    ADDRESS_1, MATCHED_DATE, D_TO_A_MATCHED, VERSION_NO
+) VALUES (
+    'TRIN000000000001', 'DEMOUS33XXX', 'MT103', '32', 'DEMOUS33XXX',
+    'Example City', SYSDATE, 'Y', 1
+);
+
+INSERT INTO ISTB_MSGHO (
+    CONTRACT_REF_NO, EVENT_SEQ_NO, MSG_TYPE, RECEIVER, SERIAL_NO,
+    ACC_BRANCH, ACCOUNT, ACC_CCY, TAG_CCY, EX_RATE, SETTLEMENT_AMT,
+    VALUE_DATE, PAY_RECEIVE, COUNTERPARTY, OUR_CORRESPONDENT
+) VALUES (
+    'FTLAB0000000001', 1, 'MT103', 'DEMOUS33XXX', 1,
+    '001', '0000001234567890', 'USD', 'USD', 1, 250,
+    DATE '2026-10-11', 'P', '000000102', 'TSTBKHPPXXX'
+);
+
+INSERT INTO MSTB_DLY_MSG_OUT (
+    BRANCH, DCN, REFERENCE_NO, ESN, MODULE, MSG_TYPE, RECEIVER, SERIAL_NO,
+    CCY, PRODUCT, AMOUNT, MEDIA, SWIFT_MSG_TYPE, MCS, NODE, FORMAT, LANGUAGE,
+    NO_OF_COPIES, PRIORITY, NAME, INSERT_TIME, GENERATE_STATUS, MSG_STATUS,
+    BRANCH_DATE, AUTH_STAT, MAKER_ID, MAKER_DT_STAMP, ONCE_AUTH, MESSAGE,
+    RUNNING_NO, NO_OF_HANDOFF, HOLD_STATUS, PROCESSED_FLAG, VALUE_DATE,
+    TESTCURRENCY, ACK_NACK_STATUS, CUST_AC_NO
+) VALUES (
+    '001', 'TROU000000000001', 'FTLAB0000000001', 1, 'FT', 'MT103',
+    'DEMOUS33XXX', 1, 'USD', 'FTR1', 250, 'SWIFT', 'MT103', 'SWIFT',
+    'LABNODE', 'FIN', 'ENG', 1, 1, 'FICTIONAL DEMO RECEIVER BANK', SYSDATE,
+    'G', 'G', DATE '2026-10-11', 'U', 'LABMAKER', SYSDATE, 'N',
+    TO_CLOB(q'~{1:F01TSTBKHPPAXXX0000000000}{2:I103DEMOUS33XXXXN}{4:
+:20:FTLAB0000000001
+:23B:CRED
+:32A:261011USD250,00
+:50K:/0000001234567890
+TRAINING ORDERING CUSTOMER
+:59:/123456789012
+TRAINING BENEFICIARY
+:70:TRAINING ONLY - DO NOT SEND
+:71A:SHA
+-}~'),
+    1, 0, 'N', 'N', DATE '2026-10-11', 'USD', NULL, '0000001234567890'
+);
+
+COMMIT;
+
+PROMPT Creating custom lab package using the FLEXCUBE-named training tables...
+
+CREATE OR REPLACE PACKAGE FCUBS_SWIFT_LAB_PKG AS
+    PROCEDURE VALIDATE_INBOUND(p_dcn IN VARCHAR2);
+    PROCEDURE VALIDATE_OUTBOUND(p_dcn IN VARCHAR2);
+    PROCEDURE AUTHORIZE_OUTBOUND(p_dcn IN VARCHAR2, p_checker_id IN VARCHAR2);
+    PROCEDURE MARK_OUTBOUND_HANDOFF(p_dcn IN VARCHAR2, p_actor IN VARCHAR2);
+    PROCEDURE RECORD_ACK_NACK(p_dcn IN VARCHAR2, p_ack_nack IN VARCHAR2, p_actor IN VARCHAR2);
+END FCUBS_SWIFT_LAB_PKG;
+/
+
+CREATE OR REPLACE PACKAGE BODY FCUBS_SWIFT_LAB_PKG AS
+
+    PROCEDURE VALIDATE_INBOUND(p_dcn IN VARCHAR2) IS
+        l_sender   MSTB_DLY_MSG_IN.SENDER%TYPE;
+        l_type     MSTB_DLY_MSG_IN.SWIFT_MSG_TYPE%TYPE;
+        l_media    MSTB_DLY_MSG_IN.MEDIA%TYPE;
+        l_branch   MSTB_DLY_MSG_IN.BRANCH%TYPE;
+        l_ccy      MSTB_DLY_MSG_IN.CCY%TYPE;
+        l_bic_cnt  PLS_INTEGER;
+        l_rte_cnt  PLS_INTEGER;
+    BEGIN
+        SELECT SENDER, SWIFT_MSG_TYPE, MEDIA, BRANCH, CCY
+          INTO l_sender, l_type, l_media, l_branch, l_ccy
+          FROM MSTB_DLY_MSG_IN
+         WHERE DCN = p_dcn;
+
+        SELECT COUNT(*)
+          INTO l_bic_cnt
+          FROM ISTM_BIC_DIRECTORY
+         WHERE BIC_CODE = UPPER(TRIM(l_sender))
+           AND NVL(RECORD_STAT, 'O') = 'O'
+           AND NVL(AUTH_STAT, 'A') = 'A'
+           AND NVL(BLACKLISTED, 'N') = 'N';
+
+        IF l_bic_cnt = 0 THEN
+            RAISE_APPLICATION_ERROR(-20061, 'Inbound message sender BIC is unknown, unauthorized, closed or blacklisted.');
+        END IF;
+
+        SELECT COUNT(*)
+          INTO l_rte_cnt
+          FROM MSTB_INCOMING_ROUTING
+         WHERE MEDIA = l_media
+           AND MSGTYPE = l_type
+           AND BRANCH = l_branch
+           AND BIC_CODE = UPPER(TRIM(l_sender))
+           AND (CURRENCY = l_ccy OR CURRENCY IS NULL)
+           AND NVL(AUTH_STAT, 'A') = 'A'
+           AND NVL(RECORD_STAT, 'O') = 'O';
+
+        IF l_rte_cnt = 0 THEN
+            RAISE_APPLICATION_ERROR(-20062, 'No authorized incoming route matches media, message type, branch, sender BIC and currency.');
+        END IF;
+
+        DBMS_OUTPUT.PUT_LINE('Inbound message ' || p_dcn || ' passed lab BIC and routing checks.');
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20063, 'Inbound message DCN not found: ' || p_dcn);
+    END VALIDATE_INBOUND;
+
+    PROCEDURE VALIDATE_OUTBOUND(p_dcn IN VARCHAR2) IS
+        l_receiver  MSTB_DLY_MSG_OUT.RECEIVER%TYPE;
+        l_type      MSTB_DLY_MSG_OUT.SWIFT_MSG_TYPE%TYPE;
+        l_ccy       MSTB_DLY_MSG_OUT.CCY%TYPE;
+        l_amount    MSTB_DLY_MSG_OUT.AMOUNT%TYPE;
+        l_bic_cnt   PLS_INTEGER;
+        l_limit     ISTM_TXNCCY_LIMIT_DETAILS.LIMIT_AMOUNT%TYPE;
+        l_type_code ISTM_TXNCCY_LIMIT_MASTER.SWIFT_MSG_TYPE%TYPE;
+    BEGIN
+        SELECT RECEIVER, SWIFT_MSG_TYPE, CCY, AMOUNT
+          INTO l_receiver, l_type, l_ccy, l_amount
+          FROM MSTB_DLY_MSG_OUT
+         WHERE DCN = p_dcn;
+
+        SELECT COUNT(*)
+          INTO l_bic_cnt
+          FROM ISTM_BIC_DIRECTORY
+         WHERE BIC_CODE = UPPER(TRIM(l_receiver))
+           AND NVL(RECORD_STAT, 'O') = 'O'
+           AND NVL(AUTH_STAT, 'A') = 'A'
+           AND NVL(BLACKLISTED, 'N') = 'N';
+
+        IF l_bic_cnt = 0 THEN
+            RAISE_APPLICATION_ERROR(-20064, 'Outbound receiver BIC is unknown, unauthorized, closed or blacklisted.');
+        END IF;
+
+        l_type_code := UPPER(TRIM(l_type));
+        IF SUBSTR(l_type_code, 1, 2) = 'MT' THEN
+            l_type_code := SUBSTR(l_type_code, 3);
+        END IF;
+
+        BEGIN
+            SELECT D.LIMIT_AMOUNT
+              INTO l_limit
+              FROM ISTM_TXNCCY_LIMIT_MASTER M
+              JOIN ISTM_TXNCCY_LIMIT_DETAILS D
+                ON D.BIC_CODE = M.BIC_CODE
+               AND D.SWIFT_MSG_TYPE = M.SWIFT_MSG_TYPE
+               AND D.TYPE = M.TYPE
+             WHERE M.BIC_CODE = UPPER(TRIM(l_receiver))
+               AND M.SWIFT_MSG_TYPE = l_type_code
+               AND M.TYPE IN ('O', 'B')
+               AND D.CURRENCY_CODE = l_ccy
+               AND NVL(M.RECORD_STAT, 'O') = 'O'
+               AND NVL(M.AUTH_STAT, 'A') = 'A';
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RAISE_APPLICATION_ERROR(-20065, 'No authorized bilateral limit exists for receiver, message type and currency.');
+        END;
+
+        IF l_limit IS NOT NULL AND l_amount > l_limit THEN
+            RAISE_APPLICATION_ERROR(-20066, 'Payment amount exceeds bilateral currency limit.');
+        END IF;
+
+        DBMS_OUTPUT.PUT_LINE('Outbound message ' || p_dcn || ' passed lab BIC and limit checks.');
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20067, 'Outbound message DCN not found: ' || p_dcn);
+    END VALIDATE_OUTBOUND;
+
+    PROCEDURE AUTHORIZE_OUTBOUND(p_dcn IN VARCHAR2, p_checker_id IN VARCHAR2) IS
+        l_maker     MSTB_DLY_MSG_OUT.MAKER_ID%TYPE;
+        l_auth_stat MSTB_DLY_MSG_OUT.AUTH_STAT%TYPE;
+    BEGIN
+        SELECT MAKER_ID, AUTH_STAT
+          INTO l_maker, l_auth_stat
+          FROM MSTB_DLY_MSG_OUT
+         WHERE DCN = p_dcn
+         FOR UPDATE;
+
+        IF UPPER(TRIM(l_maker)) = UPPER(TRIM(p_checker_id)) THEN
+            RAISE_APPLICATION_ERROR(-20068, 'Maker and checker must be different users.');
+        END IF;
+
+        IF l_auth_stat = 'A' THEN
+            RAISE_APPLICATION_ERROR(-20069, 'Outbound message is already authorized.');
+        END IF;
+
+        VALIDATE_OUTBOUND(p_dcn);
+
+        UPDATE MSTB_DLY_MSG_OUT
+           SET AUTH_STAT = 'A',
+               CHECKER_ID = SUBSTR(p_checker_id, 1, 12),
+               CHECKER_DT_STAMP = SYSDATE,
+               ONCE_AUTH = 'Y'
+         WHERE DCN = p_dcn;
+
+        DBMS_OUTPUT.PUT_LINE('Outbound message ' || p_dcn || ' authorized in the training schema.');
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20070, 'Outbound message DCN not found: ' || p_dcn);
+    END AUTHORIZE_OUTBOUND;
+
+    PROCEDURE MARK_OUTBOUND_HANDOFF(p_dcn IN VARCHAR2, p_actor IN VARCHAR2) IS
+        l_auth_stat      MSTB_DLY_MSG_OUT.AUTH_STAT%TYPE;
+        l_generate_status MSTB_DLY_MSG_OUT.GENERATE_STATUS%TYPE;
+    BEGIN
+        SELECT AUTH_STAT, GENERATE_STATUS
+          INTO l_auth_stat, l_generate_status
+          FROM MSTB_DLY_MSG_OUT
+         WHERE DCN = p_dcn
+         FOR UPDATE;
+
+        IF l_auth_stat <> 'A' THEN
+            RAISE_APPLICATION_ERROR(-20071, 'Authorize the outbound message before simulating handoff.');
+        END IF;
+
+        IF l_generate_status <> 'G' THEN
+            RAISE_APPLICATION_ERROR(-20072, 'Message is not marked as generated (G); handoff is blocked.');
+        END IF;
+
+        UPDATE MSTB_DLY_MSG_OUT
+           SET HANDOFF_TIME = SYSDATE,
+               NO_OF_HANDOFF = NVL(NO_OF_HANDOFF, 0) + 1,
+               PROCESSED_FLAG = 'Y',
+               DELIVERY_BY = SUBSTR(p_actor, 1, 20)
+         WHERE DCN = p_dcn;
+
+        DBMS_OUTPUT.PUT_LINE('Local handoff simulation recorded for ' || p_dcn || '. No network transmission occurred.');
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20073, 'Outbound message DCN not found: ' || p_dcn);
+    END MARK_OUTBOUND_HANDOFF;
+
+    PROCEDURE RECORD_ACK_NACK(p_dcn IN VARCHAR2, p_ack_nack IN VARCHAR2, p_actor IN VARCHAR2) IS
+    BEGIN
+        IF UPPER(TRIM(p_ack_nack)) NOT IN ('A', 'N') THEN
+            RAISE_APPLICATION_ERROR(-20074, 'Use A for ACK or N for NACK in this training package.');
+        END IF;
+
+        UPDATE MSTB_DLY_MSG_OUT
+           SET ACK_NACK_STATUS = UPPER(TRIM(p_ack_nack)),
+               DELIVERY_BY = NVL(DELIVERY_BY, SUBSTR(p_actor, 1, 20))
+         WHERE DCN = p_dcn;
+
+        IF SQL%ROWCOUNT = 0 THEN
+            RAISE_APPLICATION_ERROR(-20075, 'Outbound message DCN not found: ' || p_dcn);
+        END IF;
+
+        DBMS_OUTPUT.PUT_LINE('Lab ACK/NACK value recorded for ' || p_dcn || '. Confirm release-specific codes before using any real FLEXCUBE database.');
+    END RECORD_ACK_NACK;
+
+END FCUBS_SWIFT_LAB_PKG;
+/
+
+PROMPT Verifying package compilation...
+SELECT OBJECT_NAME, OBJECT_TYPE, STATUS
+  FROM USER_OBJECTS
+ WHERE OBJECT_NAME = 'FCUBS_SWIFT_LAB_PKG'
+ ORDER BY OBJECT_TYPE;
+
+PROMPT Verify real-named SWIFT lab objects...
+SELECT TABLE_NAME
+  FROM USER_TABLES
+ WHERE TABLE_NAME IN (
+    'ISTM_BIC_DIRECTORY', 'ISTM_BIC_LINES', 'ISTM_BENEF_ACC',
+    'ISTM_TXNCCY_LIMIT_MASTER', 'ISTM_TXNCCY_LIMIT_DETAILS',
+    'ISTB_INSTR_CODES', 'ISTB_ISIBAN_DIRECTORY', 'ISTB_CONVERTED_FIELDS',
+    'ISTB_MSGHO', 'MSTB_DLY_MSG_IN', 'MSTB_DLY_MSG_IN_TEMP',
+    'MSTB_DLY_MSG_OUT', 'MSTB_ADV_INPUT', 'MSTB_INCOMING_ROUTING'
+ )
+ ORDER BY TABLE_NAME;
+
+PROMPT Sample outbound message (maker is LABMAKER; receiver is DEMOUS33XXX)...
+SELECT DCN, REFERENCE_NO, SWIFT_MSG_TYPE, RECEIVER, CCY, AMOUNT,
+       GENERATE_STATUS, AUTH_STAT, ACK_NACK_STATUS
+  FROM MSTB_DLY_MSG_OUT
+ WHERE DCN = 'TROU000000000001';
+
+PROMPT Sample inbound message...
+SELECT DCN, REFERENCE_NO, SENDER, SWIFT_MSG_TYPE, CCY, AMOUNT,
+       BRANCH, QUEUE, PROCESS_STATUS
+  FROM MSTB_DLY_MSG_IN
+ WHERE DCN = 'TRIN000000000001';
+
+PROMPT Script loaded. Test calls are documented below.
+PROMPT 1) BEGIN FCUBS_SWIFT_LAB_PKG.VALIDATE_INBOUND('TRIN000000000001'); END; /
+PROMPT 2) BEGIN FCUBS_SWIFT_LAB_PKG.VALIDATE_OUTBOUND('TROU000000000001'); END; /
+PROMPT 3) BEGIN FCUBS_SWIFT_LAB_PKG.AUTHORIZE_OUTBOUND('TROU000000000001','LABCHECKER'); END; /
+PROMPT 4) COMMIT;
+PROMPT 5) BEGIN FCUBS_SWIFT_LAB_PKG.MARK_OUTBOUND_HANDOFF('TROU000000000001','LABOPERATOR'); END; /
+PROMPT 6) BEGIN FCUBS_SWIFT_LAB_PKG.RECORD_ACK_NACK('TROU000000000001','A','LABOPERATOR'); END; /
+PROMPT Remember: run only once in an isolated CB_LAB schema. Do not use this reduced DDL in a FLEXCUBE installation.

@@ -1,0 +1,6 @@
+.env
+.app_password
+.pdb_admin_password
+credentials.txt
+*.pem
+*.key
