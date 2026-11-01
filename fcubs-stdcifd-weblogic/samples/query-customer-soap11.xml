@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Header/>
+  <soap:Body>
+    <QUERYCUSTOMER_IOFS_REQ xmlns="http://fcubs.ofss.com/service/FCUBSCustomerService">
+      <FCUBS_HEADER>
+        <SOURCE>FLEXBRANCH</SOURCE><UBSCOMP>FCUBS</UBSCOMP>
+        <MSGID>STDCIFD-TRAINING-QUERY-000001</MSGID>
+        <USERID>REPLACE_WITH_WEBLOGIC_USER</USERID><BRANCH>007</BRANCH>
+        <MODULEID>ST</MODULEID><SERVICE>FCUBSCustomerService</SERVICE>
+        <OPERATION>QueryCustomer</OPERATION><DESTINATION>FCUBS</DESTINATION>
+        <FUNCTIONID>STDCIFD</FUNCTIONID><ACTION>QUERY</ACTION>
+      </FCUBS_HEADER>
+      <FCUBS_BODY><Customer-IO><CUSTNO>000000301</CUSTNO></Customer-IO></FCUBS_BODY>
+    </QUERYCUSTOMER_IOFS_REQ>
+  </soap:Body>
+</soap:Envelope>

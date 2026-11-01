@@ -1,0 +1,55 @@
+-- Run before compiling STPKS_STDCIFD_MAIN in the dedicated training schema.
+SET SERVEROUTPUT ON;
+
+DECLARE
+    l_missing PLS_INTEGER := 0;
+BEGIN
+    FOR r IN (
+        SELECT 'STTM_CUSTOMER' table_name FROM dual UNION ALL
+        SELECT 'STTM_CUST_GROUP' FROM dual UNION ALL
+        SELECT 'STTM_CUST_PERSONAL' FROM dual UNION ALL
+        SELECT 'STTM_CUST_CORPORATE' FROM dual UNION ALL
+        SELECT 'STTM_CUST_PROFESSIONAL' FROM dual UNION ALL
+        SELECT 'STTM_CUST_RELATION' FROM dual UNION ALL
+        SELECT 'STTM_CUST_SHAREHOLDER' FROM dual UNION ALL
+        SELECT 'STTM_CORP_DIRECTORS' FROM dual UNION ALL
+        SELECT 'STTM_KYC_RETAIL' FROM dual UNION ALL
+        SELECT 'STTM_KYC_CORPORATE' FROM dual UNION ALL
+        SELECT 'STTM_KYC_CORP_KEYPERSONS' FROM dual UNION ALL
+        SELECT 'STTM_KYC_SHARE_HOLDERS' FROM dual UNION ALL
+        SELECT 'STTM_KYC_TXN_DETAILS' FROM dual UNION ALL
+        SELECT 'STTM_KYC_TXN_PRODUCTS' FROM dual UNION ALL
+        SELECT 'STTM_KYC_FINANCIAL' FROM dual UNION ALL
+        SELECT 'STTM_KYC_CORP_CLIENT' FROM dual UNION ALL
+        SELECT 'STTM_KYC_CORP_SUPPLIER' FROM dual UNION ALL
+        SELECT 'STTM_KYC_MGMNT_DTL' FROM dual UNION ALL
+        SELECT 'STTM_KYC_COMPL_AUDIT_DTL' FROM dual
+    ) LOOP
+        DECLARE
+            l_count PLS_INTEGER;
+        BEGIN
+            SELECT COUNT(*) INTO l_count
+              FROM USER_TABLES
+             WHERE TABLE_NAME = r.table_name;
+            IF l_count = 0 THEN
+                DBMS_OUTPUT.PUT_LINE('MISSING TABLE: ' || r.table_name);
+                l_missing := l_missing + 1;
+            END IF;
+        END;
+    END LOOP;
+
+    IF l_missing = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('All required customer training tables are present.');
+    ELSE
+        RAISE_APPLICATION_ERROR(-20090, l_missing || ' required table(s) are missing.');
+    END IF;
+END;
+/
+
+SELECT TABLE_NAME, COUNT(*) AS COLUMN_COUNT
+FROM USER_TAB_COLUMNS
+WHERE TABLE_NAME IN (
+    'STTM_CUSTOMER', 'STTM_CUST_PERSONAL', 'STTM_CUST_CORPORATE', 'STTM_CUST_GROUP'
+)
+GROUP BY TABLE_NAME
+ORDER BY TABLE_NAME;

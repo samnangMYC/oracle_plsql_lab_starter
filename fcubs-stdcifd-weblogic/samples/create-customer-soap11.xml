@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Header/>
+  <soap:Body>
+    <CREATECUSTOMER_FSFS_REQ xmlns="http://fcubs.ofss.com/service/FCUBSCustomerService">
+      <FCUBS_HEADER>
+        <SOURCE>FLEXBRANCH</SOURCE>
+        <UBSCOMP>FCUBS</UBSCOMP>
+        <MSGID>STDCIFD-TRAINING-000001</MSGID>
+        <USERID>REPLACE_WITH_WEBLOGIC_USER</USERID>
+        <BRANCH>007</BRANCH>
+        <MODULEID>ST</MODULEID>
+        <SERVICE>FCUBSCustomerService</SERVICE>
+        <OPERATION>CreateCustomer</OPERATION>
+        <DESTINATION>FCUBS</DESTINATION>
+        <FUNCTIONID>STDCIFD</FUNCTIONID>
+        <ACTION>NEW</ACTION>
+      </FCUBS_HEADER>
+      <FCUBS_BODY>
+        <Customer-Full>
+          <PRIVATE_CUSTOMER>N</PRIVATE_CUSTOMER>
+          <CUSTNO>000000301</CUSTNO>
+          <CTYPE>I</CTYPE>
+          <FULLNAME>TRAINING CUSTOMER THREE ZERO ONE</FULLNAME>
+          <SNAME>TRAINING 301</SNAME>
+          <LBRN>007</LBRN>
+          <CCATEG>RETAIL</CCATEG>
+          <ADDRLN1>TRAINING ADDRESS LINE 1</ADDRLN1>
+          <COUNTRY>KHM</COUNTRY>
+          <NLTY>KHM</NLTY>
+          <IDTYPE>NATIONAL_ID</IDTYPE>
+          <IDNUMBER>KH-TRAIN-000301</IDNUMBER>
+          <Custpersonal>
+            <FSTNAME>TRAINING</FSTNAME>
+            <LSTNAME>CUSTOMER</LSTNAME>
+            <DOB>1995-02-14</DOB>
+            <GENDR>M</GENDR>
+            <NATIONID>KH-TRAIN-000301</NATIONID>
+            <RESSTATUS>R</RESSTATUS>
+            <MOBNUM>123456789</MOBNUM>
+            <MOBISDNO>+855</MOBISDNO>
+            <LANG>ENG</LANG>
+            <BIRTHCOUNTRY>KHM</BIRTHCOUNTRY>
+          </Custpersonal>
+        </Customer-Full>
+      </FCUBS_BODY>
+    </CREATECUSTOMER_FSFS_REQ>
+  </soap:Body>
+</soap:Envelope>

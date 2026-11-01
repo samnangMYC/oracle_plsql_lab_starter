@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Customer Maintenance — FLEXCUBE-style clone</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="window" aria-label="Customer maintenance screen">
+    <header class="titlebar">
+      <span>Customer</span>
+      <div class="window-controls" aria-hidden="true"><span>−</span><span>×</span></div>
+    </header>
+    <div class="screen-state" id="screenState">New</div>
+    <div class="action-strip" aria-label="Customer actions">
+      <button id="newBtn">New</button><button id="queryBtn">Query</button><button id="saveBtn">Save</button><button id="authorizeBtn">Authorize</button><span class="action-note" id="actionNote">New customer maintenance</span>
+    </div>
+
+    <section class="header-form" aria-label="Customer master details">
+      <div class="head-type">
+        <div class="field-label">Type</div>
+        <div class="radio-stack">
+          <label><input type="radio" name="customerType" value="I" checked> Individual</label>
+          <label><input type="radio" name="customerType" value="C"> Corporate</label>
+          <label><input type="radio" name="customerType" value="B"> Bank</label>
+          <label class="checkline"><input type="checkbox" id="specialCustomerNo"> Special Customer No Generation</label>
+        </div>
+      </div>
+      <div class="head-cif">
+        <label class="head-field required"><span>Customer No</span><input id="customerNo" maxlength="9" value="10700701"><button class="pick" id="pickCustomer" title="Query customer">P</button></label>
+      </div>
+      <div class="head-names">
+        <label class="head-field"><span>Full Name</span><input id="fullName" maxlength="255" value="Walk-in Customer"></label>
+        <label class="head-field"><span>Short Name</span><input id="shortName" maxlength="20" value="WALK-IN CUSTOMER"></label>
+        <label class="head-field"><span>Branch Code</span><input id="branchCode" maxlength="3" value="007"></label>
+      </div>
+      <div class="head-category">
+        <label class="head-field required"><span>Customer Category</span><input id="customerCategory" maxlength="10" value="WALKIN"></label>
+        <label class="checkline"><input type="checkbox" id="privateCustomer"> Private Customer</label>
+      </div>
+    </section>
+
+    <nav class="main-tabs" aria-label="Customer sections" id="mainTabs">
+      <button class="tab active" data-tab="personal">Personal</button>
+      <button class="tab" data-tab="corporate">Corporate</button>
+      <button class="tab" data-tab="additional">Additional</button>
+      <button class="tab" data-tab="director">Director</button>
+      <button class="tab" data-tab="auxiliary">Auxiliary</button>
+      <button class="tab" data-tab="checklist">Check List</button>
+      <button class="tab" data-tab="mfi">MFI Details</button>
+    </nav>
+
+    <section class="form-area">
+      <div class="tab-panel active" id="panel-personal">
+        <div class="three-columns">
+          <section class="group basic-group">
+            <h3>Basic Details</h3>
+            <div class="rows">
+              <label class="form-row"><span>Prefix 1</span><input id="customerPrefix" maxlength="10"></label>
+              <label class="form-row"><span>Prefix 2</span><input id="customerPrefix1" maxlength="10"></label>
+              <label class="form-row"><span>Prefix 3</span><input id="customerPrefix2" maxlength="10"></label>
+              <label class="form-row"><span>First</span><input id="firstName" maxlength="105"></label>
+              <label class="form-row"><span>Middle</span><input id="middleName" maxlength="105"></label>
+              <label class="form-row"><span>Last</span><input id="lastName" maxlength="105"></label>
+              <label class="form-row"><span>Work Phone ISD+</span><input class="short-input" id="telIsdNo" maxlength="5"><input id="telephone" maxlength="20" aria-label="Work phone"></label>
+              <label class="form-row"><span>Home Phone ISD+</span><input class="short-input" id="homeTelIsd" maxlength="5"><input id="homeTelNo" maxlength="20" aria-label="Home phone"></label>
+              <label class="form-row"><span>Mobile ISD Code +</span><input class="short-input" id="mobIsdNo" maxlength="5"><input id="mobileNumber" maxlength="20" aria-label="Mobile number"></label>
+              <label class="form-row"><span>Fax ISD Code +</span><input class="short-input" id="faxIsdNo" maxlength="5"><input id="fax" maxlength="20" aria-label="Fax number"></label>
+              <label class="form-row"><span>Email</span><input id="eMail" type="email" maxlength="254"></label>
+              <label class="form-row"><span>Sex</span><select id="sex"><option value="">Select</option><option value="M">Male</option><option value="F">Female</option><option value="O">Other</option></select></label>
+              <label class="form-row"><span>Date of Birth</span><input id="dateOfBirth" type="date"></label>
+            </div>
+          </section>
+          <div class="middle-column">
+            <section class="group">
+              <h3>Address For Correspondence</h3>
+              <div class="rows">
+                <label class="form-row"><span>Name</span><input id="corrName" value="Walk-in Customer" maxlength="105"></label>
+                <label class="form-row"><span>Address Code</span><input id="corrAddressCode" value="GOLD1" maxlength="20"></label>
+                <label class="form-row required"><span>Address 1</span><input id="addressLine1" value="Address1" maxlength="105"></label>
+                <label class="form-row"><span>Address 2</span><input id="addressLine2" maxlength="105"></label>
+                <label class="form-row"><span>Address 3</span><input id="addressLine3" maxlength="105"></label>
+                <label class="form-row"><span>Address 4</span><input id="addressLine4" maxlength="105"></label>
+                <label class="form-row required"><span>Country</span><input id="country" value="KHM" maxlength="3"></label>
+                <label class="form-row"><span>Nationality</span><input id="nationality" value="KHM" maxlength="3"></label>
+                <label class="form-row"><span>Language</span><input id="language" value="ENG" maxlength="3"></label>
+                <label class="form-row"><span>PIN Code</span><input id="pincode" maxlength="15"></label>
+              </div>
+            </section>
+            <section class="group permanent-group">
+              <h3>Permanent Address</h3>
+              <label class="same-address"><input type="checkbox" id="sameAddress"> Same as Correspondence Address</label>
+              <div class="rows">
+                <label class="form-row"><span>Address Code</span><input id="permanentAddressCode" maxlength="20"></label>
+                <label class="form-row"><span>Address 1</span><input id="pAddress1" maxlength="105"></label>
+                <label class="form-row"><span>Address 2</span><input id="pAddress2" maxlength="105"></label>
+                <label class="form-row"><span>Address 3</span><input id="pAddress3" maxlength="105"></label>
+                <label class="form-row"><span>Address 4</span><input id="pAddress4" maxlength="105"></label>
+                <label class="form-row"><span>Country</span><input id="pCountry" maxlength="3"></label>
+                <label class="form-row"><span>PIN Code</span><input id="pPincode" maxlength="15"></label>
+              </div>
+            </section>
+          </div>
+          <div class="right-column">
+            <section class="group">
+              <h3>Passport Details</h3>
+              <div class="rows">
+                <label class="form-row"><span>Passport Number</span><input id="passportNo" maxlength="30"></label>
+                <label class="form-row"><span>Issue Date</span><input id="passportIssueDate" type="date"></label>
+                <label class="form-row"><span>Expiry Date</span><input id="passportExpiryDate" type="date"></label>
+                <label class="form-row"><span>National ID</span><input id="pNationalId" maxlength="30"></label>
+                <label class="form-row"><span>Birth Country</span><input id="birthCountry" maxlength="3"></label>
+                <label class="form-row"><span>Place of Birth</span><input id="placeOfBirth" maxlength="105"></label>
+              </div>
+            </section>
+            <section class="group additional-details">
+              <h3>Additional Details</h3>
+              <div class="check-right"><label><input type="checkbox" id="staffFlag"> Staff</label></div>
+              <div class="rows">
+                <label class="form-row"><span>KYC Status</span><select id="kycStatus"><option value="N">Yet To Verify</option><option value="Y">Verified</option><option value="R">Review Required</option></select></label>
+                <label class="form-row"><span>KYC Reference</span><input id="kycRefNo" maxlength="20"></label>
+                <label class="form-row"><span>Guardian</span><input id="legalGuardian" maxlength="105"></label>
+                <label class="form-row"><span>Minor</span><select id="minor"><option value="N">No</option><option value="Y">Yes</option></select></label>
+                <label class="form-row"><span>Submit Age Proof</span><select id="submitAgeProof"><option value="N">Not Required</option><option value="Y">Required</option></select></label>
+                <label class="form-row"><span>Preferred Date of Contact</span><input id="preferredDateContact" type="date"></label>
+                <label class="form-row"><span>Preferred Time of Contact</span><select id="preferredTimeContact"><option>Any Time</option><option>Morning</option><option>Afternoon</option><option>Evening</option></select></label>
+              </div>
+              <h3 class="subheading">Power of Attorney</h3>
+              <div class="rows"><label class="form-row"><span>Guardian / Attorney</span><input id="poaName" maxlength="105"></label></div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-corporate">
+        <div class="three-columns corporate-columns">
+          <section class="group"><h3>Corporate Details</h3><div class="rows">
+            <label class="form-row"><span>Company Type</span><input id="companyType" maxlength="10"></label>
+            <label class="form-row"><span>Business Nature</span><input id="businessNature" maxlength="10"></label>
+            <label class="form-row"><span>Group Name</span><input id="groupName" maxlength="105"></label>
+            <label class="form-row"><span>Employee Number</span><input id="employeeNumber" type="number"></label>
+            <label class="form-row"><span>Annual Turnover</span><input id="annualTurnover" type="number" step="0.01"></label>
+            <label class="form-row"><span>Parent Company Country</span><input id="parentCmpnyCountry" maxlength="3"></label>
+            <label class="form-row"><span>Other Company Type</span><input id="otherCompanyType" maxlength="105"></label>
+          </div></section>
+          <section class="group"><h3>Incorporation Details</h3><div class="rows">
+            <label class="form-row"><span>Incorporation Number</span><input id="incorporationNo" maxlength="50"></label>
+            <label class="form-row"><span>Incorporation Date</span><input id="incorporationDate" type="date"></label>
+            <label class="form-row"><span>Incorporation Country</span><input id="incorporationCountry" maxlength="3"></label>
+          </div><h3>Registered Address</h3><div class="rows">
+            <label class="form-row"><span>Address 1</span><input id="registeredAddress1" maxlength="105"></label>
+            <label class="form-row"><span>Address 2</span><input id="registeredAddress2" maxlength="105"></label>
+            <label class="form-row"><span>Address 3</span><input id="registeredAddress3" maxlength="105"></label>
+            <label class="form-row"><span>Address 4</span><input id="registeredAddress4" maxlength="105"></label>
+          </div></section>
+          <section class="group"><h3>Corporate KYC</h3><div class="rows">
+            <label class="form-row"><span>KYC Next Review Date</span><input id="corpKycNextReviewDate" type="date"></label>
+            <label class="form-row"><span>KYC Comments</span><textarea id="corporateKycComments" rows="5" maxlength="4000"></textarea></label>
+          </div><p class="hint">Corporate payload fields are serialized only where present in the verified customer XSD mapping. Confirm the installed STDCIF XSD before enabling additional corporate nodes.</p></section>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-additional"><div class="single-panel group"><h3>Additional Customer Information</h3><div class="field-grid">
+        <label class="form-row"><span>Customer Group</span><input id="custGroup" maxlength="10"></label>
+        <label class="form-row"><span>Customer Classification</span><input id="custClassification" maxlength="1"></label>
+        <label class="form-row"><span>Access Group</span><input id="accessGroup" maxlength="20"></label>
+        <label class="form-row"><span>KYC Details Flag</span><select id="kycDetails"><option value="Y">Yes</option><option value="N">No</option></select></label>
+        <label class="form-row"><span>Unique ID Type</span><input id="uniqueIdName" maxlength="30"></label>
+        <label class="form-row"><span>Unique ID Value</span><input id="uniqueIdValue" maxlength="50"></label>
+        <label class="form-row"><span>CIF Status</span><select id="cifStatus"><option value="A">Active</option><option value="S">Suspended</option><option value="D">Dormant</option></select></label>
+        <label class="form-row"><span>Frozen</span><select id="frozen"><option value="N">No</option><option value="Y">Yes</option></select></label>
+        <label class="form-row"><span>Deceased</span><select id="deceased"><option value="N">No</option><option value="Y">Yes</option></select></label>
+        <label class="form-row"><span>Whereabouts Unknown</span><select id="whereaboutsUnknown"><option value="N">No</option><option value="Y">Yes</option></select></label>
+      </div></div></div>
+      <div class="tab-panel" id="panel-director"><div class="group single-panel"><h3>Director Details</h3><p class="hint">Director table maintenance is not included in the current training package procedures. This tab is a UI placeholder until the relevant XSD blocks and PL/SQL procedures are added.</p></div></div>
+      <div class="tab-panel" id="panel-auxiliary"><div class="group single-panel"><h3>Auxiliary Details</h3><p class="hint">Auxiliary fields must be mapped from the installed STDCIF XSD and the relevant customer auxiliary table. This tab is reserved for that mapping.</p></div></div>
+      <div class="tab-panel" id="panel-checklist"><div class="group single-panel"><h3>Check List</h3><p class="hint">Checklist document rows are not persisted by the current training package. Add the checklist service/data block before enabling Save.</p></div></div>
+      <div class="tab-panel" id="panel-mfi"><div class="group single-panel"><h3>MFI Details</h3><p class="hint">Microfinance-specific fields are not present in the supplied training table model.</p></div></div>
+    </section>
+
+    <nav class="subsystem-tabs" id="subsystemTabs" aria-label="Customer subsystems">
+      <button data-sub="Group">Group</button><span>|</span><button data-sub="MIS">MIS</button><span>|</span><button data-sub="Joint">Joint</button><span>|</span><button data-sub="Standing Instructions">Standing Instructions</button><span>|</span><button data-sub="Linked Entities">Linked Entities</button><span>|</span><button data-sub="Text">Text</button><span>|</span><button data-sub="Fields">Fields</button><span>|</span><button data-sub="Image">Image</button><span>|</span><button data-sub="Limits">Limits</button><span>|</span><button data-sub="CLS Restrictions">CLS Restrictions</button><span>|</span><button data-sub="MT920">MT920</button><span>|</span><button data-sub="Domestic">Domestic</button><span>|</span><button data-sub="Professional">Professional</button><span>|</span><button data-sub="Cards">Cards</button><span>|</span><button data-sub="Linked Account">Linked Account</button><span>|</span><button data-sub="KYC Details">KYC Details</button><span>|</span><button data-sub="Joint Venture">Joint Venture</button><span>|</span><button data-sub="Account Details">Account Details</button><span>|</span><button data-sub="NSF Black list status">NSF Black list status</button><span>|</span><button data-sub="Documents">Documents</button><span>|</span><button data-sub="Banking Channels">Banking Channels</button><span>|</span><button data-sub="Change Log">Change Log</button>
+    </nav>
+
+    <footer class="audit-footer">
+      <div class="audit-col"><div>Maker <b id="makerId">—</b><span id="makerDate">Date Time: —</span></div><div>Checker <b id="checkerId">—</b><span id="checkerDate">Date Time: —</span></div></div>
+      <div class="audit-col center"><div>Mod No <b id="modNo">—</b></div><div>Authorization Status <b id="authStatus">—</b></div></div>
+      <div class="audit-col right"><div>Record Status <b id="recordStatus">—</b></div><button id="exitBtn" class="exit-btn">Exit</button></div>
+    </footer>
+  </main>
+
+  <section class="soap-drawer" id="soapDrawer" aria-label="FCUBS message console">
+    <div class="soap-drawer-head"><strong>FCUBS Gateway Message Console</strong><div><span id="soapStatus">Not connected</span><button id="toggleSoap">Hide</button></div></div>
+    <div class="soap-config">
+      <label>Function ID <select id="functionId"><option value="STDCIFD" selected>STDCIFD — Clone (gateway mapping required)</option><option value="STDCIF">STDCIF — Standard Function</option></select></label>
+      <label>Source <input id="sourceSystem" value="FLEXBRANCH"></label>
+      <label>User ID <input id="gatewayUser" value="TRAINING_USER"></label>
+      <label>Branch <input id="gatewayBranch" value="007"></label>
+      <label>Proxy URL <input id="proxyUrl" value="/api/fcubs/customer-soap"></label>
+    </div>
+    <textarea id="soapPreview" spellcheck="false" aria-label="Generated FCUBS request XML" placeholder="Generated FCUBS request XML appears here"></textarea>
+    <div class="soap-actions"><button id="generateXml">Generate XML</button><button id="copyXml">Copy XML</button><button id="sendXml" class="primary">Send to FCUBS proxy</button><button id="clearXml">Clear</button></div>
+    <pre id="soapResponse" aria-live="polite"></pre>
+  </section>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

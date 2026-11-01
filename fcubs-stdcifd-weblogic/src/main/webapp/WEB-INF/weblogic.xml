@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<weblogic-web-app xmlns="http://xmlns.oracle.com/weblogic/weblogic-web-app"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://xmlns.oracle.com/weblogic/weblogic-web-app http://xmlns.oracle.com/weblogic/weblogic-web-app/1.8/weblogic-web-app.xsd">
+    <context-root>/stdcifd</context-root>
+    <resource-description>
+        <res-ref-name>jdbc/FCUBSDS</res-ref-name>
+        <jndi-name>jdbc/FCUBSDS</jndi-name>
+    </resource-description>
+    <!-- Map these application roles to groups from your WebLogic security realm. -->
+    <security-role-assignment>
+        <role-name>CIF_USER</role-name>
+        <principal-name>cif_users</principal-name>
+    </security-role-assignment>
+    <security-role-assignment>
+        <role-name>CIF_MAKER</role-name>
+        <principal-name>cif_makers</principal-name>
+    </security-role-assignment>
+    <security-role-assignment>
+        <role-name>CIF_CHECKER</role-name>
+        <principal-name>cif_checkers</principal-name>
+    </security-role-assignment>
+</weblogic-web-app>
