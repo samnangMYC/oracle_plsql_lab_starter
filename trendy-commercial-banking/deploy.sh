@@ -3,7 +3,7 @@ set -Eeuo pipefail
 umask 077
 
 # Trendy Commercial Banking - Ubuntu 22.04/24.04 EC2.
-# Creates a separate PDB TRENDYDB from the default Oracle Free CDB.
+# Creates a separate PDB TRENDYSERVICE from the default Oracle Free CDB.
 # Run on a NEW lab deployment: chmod +x deploy.sh && ./deploy.sh
 # WARNING: do not use this script to replace a database containing valuable data.
 
@@ -68,7 +68,7 @@ if [[ "$ready" -ne 1 ]]; then
   exit 1
 fi
 
-echo "[6/8] Creating TRENDYDB PDB if missing..."
+echo "[6/8] Creating TRENDYSERVICE PDB if missing..."
 # PDB creation uses Oracle's documented CREATE PLUGGABLE DATABASE workflow.
 # The PDB admin password is generated as hex to avoid SQL quoting problems.
 if [[ ! -f .pdb_admin_password ]]; then
@@ -86,18 +86,18 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 DECLARE
   pdb_count NUMBER;
 BEGIN
-  SELECT COUNT(*) INTO pdb_count FROM v\$pdbs WHERE name = 'TRENDYDB';
+  SELECT COUNT(*) INTO pdb_count FROM v\$pdbs WHERE name = 'TRENDYSERVICE';
   IF pdb_count = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE PLUGGABLE DATABASE TRENDYDB ADMIN USER PDBADMIN IDENTIFIED BY "${PDB_ADMIN_PASSWORD}" ROLES=(DBA)';
+    EXECUTE IMMEDIATE 'CREATE PLUGGABLE DATABASE TRENDYSERVICE ADMIN USER PDBADMIN IDENTIFIED BY "${PDB_ADMIN_PASSWORD}" ROLES=(DBA)';
   END IF;
 END;
 /
-ALTER PLUGGABLE DATABASE TRENDYDB OPEN;
-ALTER PLUGGABLE DATABASE TRENDYDB SAVE STATE;
+ALTER PLUGGABLE DATABASE TRENDYSERVICE OPEN;
+ALTER PLUGGABLE DATABASE TRENDYSERVICE SAVE STATE;
 EXIT
 SQL
 
-echo "[7/8] Creating TRENDY application schema in TRENDYDB..."
+echo "[7/8] Creating TRENDY application schema in TRENDYSERVICE..."
 if [[ ! -f .app_password ]]; then
   openssl rand -hex 20 > .app_password
 fi
@@ -110,7 +110,7 @@ chmod 600 .app_password
 
 docker exec -i trendy-commercial-banking-oracle bash -lc 'sqlplus -s / as sysdba' <<SQL
 WHENEVER SQLERROR EXIT SQL.SQLCODE
-ALTER SESSION SET CONTAINER = TRENDYDB;
+ALTER SESSION SET CONTAINER = TRENDYSERVICE;
 DECLARE
   user_exists NUMBER;
 BEGIN
@@ -128,11 +128,11 @@ ALTER USER TRENDY QUOTA UNLIMITED ON USERS;
 EXIT
 SQL
 
-echo "[8/8] Verifying TRENDYDB and writing private credentials..."
+echo "[8/8] Verifying TRENDYSERVICE and writing private credentials..."
 docker exec -i trendy-commercial-banking-oracle bash -lc 'sqlplus -s / as sysdba' <<'SQL'
 WHENEVER SQLERROR EXIT SQL.SQLCODE
-SELECT name, open_mode FROM v$pdbs WHERE name = 'TRENDYDB';
-ALTER SESSION SET CONTAINER = TRENDYDB;
+SELECT name, open_mode FROM v$pdbs WHERE name = 'TRENDYSERVICE';
+ALTER SESSION SET CONTAINER = TRENDYSERVICE;
 SELECT SYS_CONTEXT('USERENV','CON_NAME') AS current_pdb FROM dual;
 EXIT
 SQL
@@ -141,7 +141,7 @@ cat > credentials.txt <<EOF
 Project: Trendy Commercial Banking
 Oracle engine: Oracle Database Free
 CDB: FREE (default image CDB; verify on your image release)
-PDB/service: TRENDYDB
+PDB/service: TRENDYSERVICE
 Host on EC2: 127.0.0.1
 Port: 1521
 CDB admin username: SYSTEM
@@ -160,7 +160,7 @@ SQL client:
 Host: 127.0.0.1
 Port: 1521
 Connection type: Service name
-Service: TRENDYDB
+Service: TRENDYSERVICE
 Username: TRENDY
 Password: application password above
 
@@ -171,7 +171,7 @@ chmod 600 credentials.txt .env .app_password .pdb_admin_password
 echo
 echo "Deployment complete."
 docker compose ps
-echo "Connection: 127.0.0.1:1521 / service TRENDYDB (through SSH tunnel)"
+echo "Connection: 127.0.0.1:1521 / service TRENDYSERVICE (through SSH tunnel)"
 echo "Credentials: $APP_DIR/credentials.txt (private; mode 600)"
 echo "Logs: docker logs -f trendy-commercial-banking-oracle"
 echo "Keep inbound TCP 1521 closed in the EC2 security group."
